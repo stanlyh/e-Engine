@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Aprobaciones.Api/Aprobaciones.Api.csproj" />
+    <Project Path="src/Aprobaciones.Application/Aprobaciones.Application.csproj" />
+    <Project Path="src/Aprobaciones.Domain/Aprobaciones.Domain.csproj" />
+    <Project Path="src/Aprobaciones.Infrastructure/Aprobaciones.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Aprobaciones.Domain.Tests/Aprobaciones.Domain.Tests.csproj" />
+  </Folder>
+</Solution>

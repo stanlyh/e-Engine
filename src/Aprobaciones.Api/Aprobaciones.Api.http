@@ -1,0 +1,8 @@
+@Api = http://localhost:5214
+
+# Usa tu sesión de Windows (Negotiate)
+GET {{Api}}/api/me
+
+###
+
+GET {{Api}}/api/reglas-aprobacion

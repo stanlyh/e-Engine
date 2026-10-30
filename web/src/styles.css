@@ -1,0 +1,27 @@
+@import 'tailwindcss';
+
+/* Colores por estado: se usan igual en indicadores, badges y línea de tiempo. */
+@theme {
+  --font-sans: 'Segoe UI', system-ui, sans-serif;
+
+  --color-primario-50: var(--color-indigo-50);
+  --color-primario-700: var(--color-indigo-700);
+
+  --color-enviado-500: var(--color-sky-500);
+
+  --color-pendiente-50: var(--color-amber-50);
+  --color-pendiente-500: var(--color-amber-500);
+  --color-pendiente-800: var(--color-amber-800);
+
+  --color-autorizado-500: var(--color-emerald-500);
+
+  --color-rechazado-50: var(--color-red-50);
+  --color-rechazado-200: var(--color-red-200);
+  --color-rechazado-500: var(--color-red-500);
+  --color-rechazado-700: var(--color-red-700);
+  --color-rechazado-800: var(--color-red-800);
+
+  --color-tesoreria-500: var(--color-blue-600);
+
+  --color-procesado-500: var(--color-slate-500);
+}
