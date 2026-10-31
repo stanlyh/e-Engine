@@ -49,6 +49,36 @@ Se configuran en `appsettings.json`, sección `Seguridad`:
 
 En **Development**, `Seguridad:GruposSimulados` asigna grupos al usuario actual sin consultar AD.
 
+## Archivos y CFDI (sección `Documentos` de appsettings)
+
+| Clave | Uso |
+|---|---|
+| `RutaArchivos` | Carpeta absoluta de los XML/PDF: `{año}/{mes}/{documentoId}/{guid}.ext` (en desarrollo: `D:\repos\e-Engine\docs`) |
+| `TamanoMaximoMb` | Límite por archivo (10 MB) |
+| `RfcEmpresa` | Si se configura, el RFC receptor del CFDI debe coincidir |
+| `TiposComprobante` | Tipos aceptados (por defecto `I`, ingreso) |
+
+Al subir el XML se valida que sea CFDI 4.0 timbrado (sin DTD, para evitar XXE) y que el UUID no esté en otro documento. El PDF se valida por su firma `%PDF-`.
+
+## API
+
+| Método | Ruta | Rol |
+|---|---|---|
+| GET | `/api/me` | Todos (entrega la cookie XSRF-TOKEN) |
+| GET | `/api/reglas-aprobacion` | Todos |
+| GET | `/api/documentos?estado=&buscar=&pagina=&tamano=` | Mis documentos |
+| POST | `/api/documentos` `{ descripcion }` | Usuario |
+| GET | `/api/documentos/{id}` | Con acceso: detalle, archivos, cadena, historial y permisos |
+| PUT | `/api/documentos/{id}` `{ descripcion }` | Creador (Borrador/Rechazado) |
+| POST | `/api/documentos/{id}/archivos/xml` · `/pdf` (multipart `archivo`) | Creador |
+| GET | `/api/documentos/{id}/archivos/{archivoId}[?descargar=true]` | Con acceso |
+| POST | `/api/documentos/{id}/enviar` | Creador |
+| POST | `/api/documentos/{id}/aprobar` `{ comentario? }` | Aprobador del paso actual |
+| POST | `/api/documentos/{id}/rechazar` `{ motivo }` | Aprobador del paso actual |
+| POST | `/api/documentos/{id}/procesar` `{ referencia, comentario? }` | Tesorería |
+
+Las escrituras exigen el encabezado `X-XSRF-TOKEN`.
+
 ## Desarrollo
 
 1. Cadena de conexión en `src/Aprobaciones.Api/appsettings.Development.json` (`ConnectionStrings:Aprobaciones`).
@@ -58,20 +88,21 @@ En **Development**, `Seguridad:GruposSimulados` asigna grupos al usuario actual 
    ```
 3. API: `dotnet run --project src/Aprobaciones.Api --launch-profile http` (http://localhost:5214)
 4. Angular: `cd web && npm start` (http://localhost:4200). Llama a la API con credenciales de Windows vía CORS.
-5. Pruebas: `dotnet test`
+5. Pruebas: `dotnet test` (dominio + lector CFDI + almacén en disco)
+6. Con `sqlcmd` usa `-I`: los índices filtrados requieren `QUOTED_IDENTIFIER ON`.
 
 ## Producción (IIS)
 
 1. `cd web && npm run build` (genera `src/Aprobaciones.Api/wwwroot`)
 2. `dotnet publish src/Aprobaciones.Api -c Release`
 3. En el sitio IIS: **Windows Authentication habilitado** y **Anonymous deshabilitado**.
-4. La cuenta del Application Pool necesita acceso a SQL Server y, en la Fase 3, a la carpeta de archivos.
+4. La cuenta del Application Pool necesita acceso a SQL Server y permiso de escritura en `Documentos:RutaArchivos`.
 
 ## Avance
 
 - [x] Fase 1: solución, BD, migración inicial con reglas de ejemplo, Windows Auth, grupos → roles, antiforgery
 - [x] Fase 2: dominio y máquina de estados con pruebas
-- [ ] Fase 3: API de documentos y archivos (XML/PDF en disco, lectura de CFDI, UUID único)
+- [x] Fase 3: API de documentos y archivos (XML/PDF en disco, lectura de CFDI, UUID único, acciones del flujo)
 - [~] Fase 4: shell de Angular (layout, sesión, guards, interceptor, Tailwind) listo; faltan componentes compartidos
 - [ ] Fase 5: Mis documentos, nuevo/editar con 2 archivos, detalle con seguimiento
 - [ ] Fase 6: bandejas de aprobación y Tesorería

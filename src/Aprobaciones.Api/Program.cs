@@ -3,13 +3,22 @@ using Aprobaciones.Api.Errores;
 using Aprobaciones.Api.Seguridad;
 using Aprobaciones.Application;
 using Aprobaciones.Application.Abstracciones;
+using Aprobaciones.Application.Documentos;
 using Aprobaciones.Infrastructure;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Negotiate;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddOptions<OpcionesDocumentos>()
+    .Bind(builder.Configuration.GetSection(OpcionesDocumentos.Seccion))
+    .ValidateDataAnnotations()
+    .Validate(o => Path.IsPathRooted(o.RutaArchivos), "Documentos:RutaArchivos debe ser una ruta absoluta.")
+    .ValidateOnStart();
+builder.Services.ConfigureHttpJsonOptions(o => o.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
 // Intranet: Windows Authentication (Kerberos/NTLM). En IIS la negociación la hace IIS y este handler la reutiliza.
 builder.Services.AddAuthentication(NegotiateDefaults.AuthenticationScheme).AddNegotiate();
@@ -62,6 +71,7 @@ app.UseValidacionAntiforgery();
 
 app.MapCuentaEndpoints();
 app.MapReglasEndpoints();
+app.MapDocumentosEndpoints();
 
 // Rutas de API inexistentes devuelven 404; el resto lo resuelve el router de Angular.
 app.MapFallback("/api/{**ruta}", () => Results.NotFound());

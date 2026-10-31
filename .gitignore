@@ -485,7 +485,7 @@ $RECYCLE.BIN/
 src/Aprobaciones.Api/wwwroot/
 
 # Archivos cargados en desarrollo
-ArchivosDocumentos/
+docs/
 
 appsettings.Development.json
 appsettings.json

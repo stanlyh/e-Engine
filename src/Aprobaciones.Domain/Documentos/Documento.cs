@@ -158,18 +158,25 @@ public sealed class Documento
             Normalizar(comentario) is { } c ? $"Ref. {ReferenciaTesoreria}: {c}" : $"Ref. {ReferenciaTesoreria}", ahora);
     }
 
+    /// <summary>Si el usuario puede aprobar o rechazar el paso actual (para mostrar u ocultar acciones).</summary>
+    public bool PuedeResolver(int usuarioId, Func<string, bool> perteneceAGrupo) =>
+        MotivoNoResoluble(usuarioId, perteneceAGrupo) is null;
+
     private DocumentoAprobacion ExigirPasoResoluble(int usuarioId, Func<string, bool> perteneceAGrupo)
     {
-        if (Estado != EstadoDocumento.EnAprobacion)
-            throw new DomainException($"El documento no está en aprobación (estado actual: {Estado}).");
-        if (usuarioId == CreadoPorId) throw new DomainException("No puedes aprobar ni rechazar tu propio documento.");
+        if (MotivoNoResoluble(usuarioId, perteneceAGrupo) is { } motivo) throw new DomainException(motivo);
+        return PasoActual!;
+    }
 
-        var paso = PasoActual ?? throw new DomainException("El documento no tiene un paso pendiente.");
-        if (!perteneceAGrupo(paso.GrupoAd))
-            throw new DomainException($"No perteneces al grupo que aprueba el paso '{paso.Nombre}'.");
+    private string? MotivoNoResoluble(int usuarioId, Func<string, bool> perteneceAGrupo)
+    {
+        if (Estado != EstadoDocumento.EnAprobacion) return $"El documento no está en aprobación (estado actual: {Estado}).";
+        if (usuarioId == CreadoPorId) return "No puedes aprobar ni rechazar tu propio documento.";
+        if (PasoActual is not { } paso) return "El documento no tiene un paso pendiente.";
+        if (!perteneceAGrupo(paso.GrupoAd)) return $"No perteneces al grupo que aprueba el paso '{paso.Nombre}'.";
         if (RondaActual.Any(a => a.Estado == EstadoPaso.Aprobado && a.ResueltoPorId == usuarioId))
-            throw new DomainException("Ya aprobaste un paso de este documento; otra persona debe resolver este.");
-        return paso;
+            return "Ya aprobaste un paso de este documento; otra persona debe resolver este.";
+        return null;
     }
 
     private void ExigirEdicionPorCreador(int usuarioId)
