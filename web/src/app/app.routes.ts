@@ -36,15 +36,13 @@ export const routes: Routes = [
         path: 'aprobaciones',
         title: 'Por aprobar',
         canMatch: [requiereRol('Aprobador')],
-        loadComponent: () => import('./features/pendiente/pendiente').then((m) => m.Pendiente),
-        data: { titulo: 'Documentos por aprobar', fase: 6 },
+        loadComponent: () => import('./features/bandejas/por-aprobar').then((m) => m.PorAprobar),
       },
       {
         path: 'tesoreria',
         title: 'Tesorería',
         canMatch: [requiereRol('Tesoreria')],
-        loadComponent: () => import('./features/pendiente/pendiente').then((m) => m.Pendiente),
-        data: { titulo: 'Bandeja de Tesorería', fase: 6 },
+        loadComponent: () => import('./features/bandejas/bandeja-tesoreria').then((m) => m.BandejaTesoreria),
       },
       {
         path: 'admin',

@@ -2,26 +2,27 @@ import { CurrencyPipe, DatePipe } from '@angular/common';
 import { httpResource } from '@angular/common/http';
 import { Component, computed, input, linkedSignal, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { ESTADOS, EstadoDocumento, Pagina, DocumentoResumen } from '../../core/api/modelos';
+import { FILTROS_ESTADO, Pagina, DocumentoResumen } from '../../core/api/modelos';
 import { EstadoBadge } from '../../shared/ui/estado-badge';
+import { Paginacion } from '../../shared/ui/paginacion';
 
 const TAMANO_PAGINA = 20;
 
 @Component({
   selector: 'app-mis-documentos',
-  imports: [RouterLink, DatePipe, CurrencyPipe, EstadoBadge],
+  imports: [RouterLink, DatePipe, CurrencyPipe, EstadoBadge, Paginacion],
   template: `
     <div class="flex flex-wrap items-center justify-between gap-3">
-      <h1 class="text-2xl font-semibold tracking-tight">Mis documentos</h1>
+      <h1 class="text-2xl font-semibold tracking-tight">{{ verTodos() ? 'Todos los documentos' : 'Mis documentos' }}</h1>
       <a routerLink="/documentos/nuevo" class="btn-primario">+ Nuevo documento</a>
     </div>
 
     <form class="mt-6 flex flex-col gap-3 sm:flex-row" (submit)="$event.preventDefault(); buscar()">
       <label class="sr-only" for="filtro-estado">Estado</label>
-      <select id="filtro-estado" class="campo sm:w-48" [value]="estadoFiltro() ?? ''" (change)="cambiarEstado($event)">
+      <select id="filtro-estado" class="campo sm:w-64" [value]="filtroClave()" (change)="cambiarEstado($event)">
         <option value="">Todos los estados</option>
-        @for (e of estados; track e.valor) {
-          <option [value]="e.valor">{{ e.etiqueta }}</option>
+        @for (f of filtros; track f.clave) {
+          <option [value]="f.clave">{{ f.etiqueta }}</option>
         }
       </select>
       <label class="sr-only" for="filtro-texto">Buscar</label>
@@ -35,6 +36,14 @@ const TAMANO_PAGINA = 20;
       />
       <button type="submit" class="btn-secundario">Buscar</button>
     </form>
+    @if (desdeFiltro(); as desde) {
+      <p class="mt-3 flex items-center gap-2 text-sm text-slate-600">
+        <span class="inline-flex items-center gap-1 rounded-full bg-primario-50 px-3 py-1 text-primario-700">
+          Enviados desde {{ desde | date: 'dd/MM/yyyy' }}
+          <button type="button" class="ml-1 font-semibold" aria-label="Quitar filtro de fecha" (click)="quitarDesde()">×</button>
+        </span>
+      </p>
+    }
 
     <div class="tarjeta mt-4 overflow-hidden">
       @if (documentos.error()) {
@@ -67,7 +76,12 @@ const TAMANO_PAGINA = 20;
                   <td class="px-4 py-3 whitespace-nowrap">
                     <a [routerLink]="['/documentos', d.id]" class="font-medium text-primario-700 hover:underline">{{ d.folio }}</a>
                   </td>
-                  <td class="max-w-xs truncate px-4 py-3" [title]="d.descripcion">{{ d.descripcion }}</td>
+                  <td class="max-w-xs px-4 py-3">
+                    <span class="block truncate" [title]="d.descripcion">{{ d.descripcion }}</span>
+                    @if (verTodos()) {
+                      <span class="text-xs text-slate-500">Cargó {{ d.creadoPor }}</span>
+                    }
+                  </td>
                   <td class="hidden max-w-xs truncate px-4 py-3 md:table-cell">
                     {{ d.nombreEmisor ?? '—' }}
                     @if (d.rfcEmisor) {
@@ -92,44 +106,38 @@ const TAMANO_PAGINA = 20;
           </table>
         </div>
 
-        @if (totalPaginas() > 1) {
-          <nav class="flex items-center justify-between border-t border-slate-200 px-4 py-3 text-sm" aria-label="Paginación">
-            <span class="text-slate-500">{{ pagina()?.total }} documentos · página {{ numeroPagina() }} de {{ totalPaginas() }}</span>
-            <div class="flex gap-2">
-              <button type="button" class="btn-secundario" [disabled]="numeroPagina() <= 1" (click)="numeroPagina.set(numeroPagina() - 1)">
-                Anterior
-              </button>
-              <button
-                type="button"
-                class="btn-secundario"
-                [disabled]="numeroPagina() >= totalPaginas()"
-                (click)="numeroPagina.set(numeroPagina() + 1)"
-              >
-                Siguiente
-              </button>
-            </div>
-          </nav>
+        @if (pagina(); as p) {
+          <app-paginacion [pagina]="p" (cambiar)="numeroPagina.set($event)" />
         }
       }
     </div>
   `,
 })
 export class MisDocumentos {
-  /** Filtro inicial desde la URL (?estado=), p. ej. al venir de un indicador del inicio. */
-  readonly estado = input<EstadoDocumento | undefined>();
+  /** Filtros iniciales desde la URL, p. ej. al venir de un indicador del inicio. */
+  readonly estado = input<string>();
+  readonly todos = input<string>();
+  readonly desde = input<string>();
 
-  protected readonly estados = ESTADOS;
-  protected readonly estadoFiltro = linkedSignal<EstadoDocumento | null>(() => this.estado() ?? null);
+  protected readonly filtros = FILTROS_ESTADO;
+  protected readonly verTodos = computed(() => this.todos() === 'true');
+  protected readonly filtroClave = linkedSignal(() => this.estado() ?? '');
+  protected readonly desdeFiltro = linkedSignal(() => this.desde() ?? null);
   protected readonly textoBusqueda = signal('');
   private readonly busquedaAplicada = signal('');
-  protected readonly numeroPagina = signal(1);
+  protected readonly numeroPagina = linkedSignal({
+    source: () => [this.filtroClave(), this.desdeFiltro(), this.verTodos(), this.busquedaAplicada()],
+    computation: () => 1,
+  });
 
   protected readonly documentos = httpResource<Pagina<DocumentoResumen>>(() => ({
     url: '/api/documentos',
     params: {
       pagina: this.numeroPagina(),
       tamano: TAMANO_PAGINA,
-      ...(this.estadoFiltro() ? { estado: this.estadoFiltro()! } : {}),
+      estado: FILTROS_ESTADO.find((f) => f.clave === this.filtroClave())?.estados ?? [],
+      ...(this.verTodos() ? { todos: true } : {}),
+      ...(this.desdeFiltro() ? { desde: this.desdeFiltro()! } : {}),
       ...(this.busquedaAplicada() ? { buscar: this.busquedaAplicada() } : {}),
     },
   }));
@@ -139,19 +147,17 @@ export class MisDocumentos {
     source: () => this.documentos.value(),
     computation: (nueva, anterior) => nueva ?? anterior?.value,
   });
-  protected readonly totalPaginas = computed(() => {
-    const p = this.pagina();
-    return p ? Math.max(1, Math.ceil(p.total / p.tamanoPagina)) : 1;
-  });
-  protected readonly hayFiltros = computed(() => !!this.estadoFiltro() || !!this.busquedaAplicada());
+  protected readonly hayFiltros = computed(() => !!this.filtroClave() || !!this.busquedaAplicada() || !!this.desdeFiltro());
 
   protected cambiarEstado(evento: Event): void {
-    this.estadoFiltro.set(((evento.target as HTMLSelectElement).value || null) as EstadoDocumento | null);
-    this.numeroPagina.set(1);
+    this.filtroClave.set((evento.target as HTMLSelectElement).value);
+  }
+
+  protected quitarDesde(): void {
+    this.desdeFiltro.set(null);
   }
 
   protected buscar(): void {
     this.busquedaAplicada.set(this.textoBusqueda().trim());
-    this.numeroPagina.set(1);
   }
 }

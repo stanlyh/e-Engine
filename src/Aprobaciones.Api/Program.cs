@@ -72,6 +72,8 @@ app.UseValidacionAntiforgery();
 app.MapCuentaEndpoints();
 app.MapReglasEndpoints();
 app.MapDocumentosEndpoints();
+app.MapBandejasEndpoints();
+app.MapDashboardEndpoints();
 
 // Rutas de API inexistentes devuelven 404; el resto lo resuelve el router de Angular.
 app.MapFallback("/api/{**ruta}", () => Results.NotFound());

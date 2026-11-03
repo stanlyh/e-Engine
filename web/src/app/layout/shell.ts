@@ -6,6 +6,7 @@ interface ItemMenu {
   ruta: string;
   etiqueta: string;
   roles?: Rol[];
+  parametros?: Record<string, string>;
 }
 
 const ETIQUETA_ROL: Record<Rol, string> = {
@@ -19,6 +20,7 @@ const MENU: ItemMenu[] = [
   { ruta: '/', etiqueta: 'Inicio' },
   { ruta: '/documentos', etiqueta: 'Mis documentos', roles: ['Usuario'] },
   { ruta: '/documentos/nuevo', etiqueta: 'Nuevo documento', roles: ['Usuario'] },
+  { ruta: '/documentos', etiqueta: 'Todos los documentos', roles: ['Admin'], parametros: { todos: 'true' } },
   { ruta: '/aprobaciones', etiqueta: 'Por aprobar', roles: ['Aprobador'] },
   { ruta: '/tesoreria', etiqueta: 'Tesorería', roles: ['Tesoreria'] },
   { ruta: '/admin', etiqueta: 'Administración', roles: ['Admin'] },

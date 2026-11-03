@@ -160,37 +160,27 @@ public sealed class DocumentosService(
             permisos);
     }
 
-    /// <summary>Documentos creados por el usuario actual, del más reciente al más antiguo.</summary>
-    public async Task<Pagina<DocumentoResumenDto>> ListarMisDocumentosAsync(
-        EstadoDocumento? estado, string? buscar, int numeroPagina, int tamanoPagina, CancellationToken ct)
+    /// <summary>Documentos del usuario actual (o todos, para Admin), del más reciente al más antiguo.</summary>
+    public async Task<Pagina<DocumentoResumenDto>> ListarAsync(FiltroDocumentos filtro, CancellationToken ct)
     {
-        numeroPagina = Math.Max(1, numeroPagina);
-        tamanoPagina = Math.Clamp(tamanoPagina, 1, 100);
+        if (filtro.Todos && !usuario.EnRol(Roles.Admin))
+            throw new AccesoDenegadoException("Solo Administración puede ver todos los documentos.");
 
-        var consulta = db.Documentos.AsNoTracking().Where(d => d.CreadoPorId == usuario.Id);
-        if (estado is not null) consulta = consulta.Where(d => d.Estado == estado);
-        if (!string.IsNullOrWhiteSpace(buscar))
-        {
-            var texto = buscar.Trim();
-            consulta = Guid.TryParse(texto, out var uuid)
-                ? consulta.Where(d => d.Cfdi!.Uuid == uuid)
-                : consulta.Where(d => d.Folio.Contains(texto) || d.Descripcion.Contains(texto)
-                    || d.Cfdi!.NombreEmisor.Contains(texto) || d.Cfdi.RfcEmisor.Contains(texto));
-        }
+        var uid = usuario.Id;
+        var consulta = db.Documentos.AsNoTracking().Buscar(filtro.Buscar);
+        if (!filtro.Todos) consulta = consulta.Where(d => d.CreadoPorId == uid);
+        if (filtro.Estados is { Count: > 0 } estados) consulta = consulta.Where(d => estados.Contains(d.Estado));
+        if (filtro.EnviadosDesde is { } desde) consulta = consulta.Where(d => d.FechaEnvio >= desde);
 
-        var total = await consulta.CountAsync(ct);
-        var elementos = await consulta
+        return await consulta
             .OrderByDescending(d => d.FechaCreacion)
-            .Skip((numeroPagina - 1) * tamanoPagina)
-            .Take(tamanoPagina)
             .Select(d => new DocumentoResumenDto(
                 d.Id, d.Folio, d.Descripcion, d.Estado,
                 d.Cfdi!.NombreEmisor, d.Cfdi.RfcEmisor, d.Cfdi.Total, d.Cfdi.Moneda, d.MontoMxn,
                 d.Aprobaciones.Where(a => a.Ronda == d.Ronda && a.Estado == EstadoPaso.Pendiente).Select(a => a.Nombre).FirstOrDefault(),
-                d.FechaCreacion, d.FechaEnvio))
-            .ToListAsync(ct);
-
-        return new Pagina<DocumentoResumenDto>(elementos, total, numeroPagina, tamanoPagina);
+                d.FechaCreacion, d.FechaEnvio,
+                db.Usuarios.Where(u => u.Id == d.CreadoPorId).Select(u => u.Nombre).First()))
+            .PaginarAsync(filtro.Pagina, filtro.Tamano, ct);
     }
 
     public async Task<(DocumentoArchivo Archivo, Stream Contenido)> AbrirArchivoAsync(int id, int archivoId, CancellationToken ct)

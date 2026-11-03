@@ -9,6 +9,7 @@ public interface IAprobacionesDbContext
 {
     DbSet<Documento> Documentos { get; }
     DbSet<DocumentoAprobacion> DocumentoAprobaciones { get; }
+    DbSet<DocumentoHistorial> DocumentoHistorial { get; }
     DbSet<Usuario> Usuarios { get; }
     DbSet<ReglaAprobacion> ReglasAprobacion { get; }
     DbSet<ReglaPaso> ReglaPasos { get; }

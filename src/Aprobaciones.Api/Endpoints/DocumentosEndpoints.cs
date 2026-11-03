@@ -13,8 +13,10 @@ internal static class DocumentosEndpoints
     {
         var grupo = app.MapGroup("/api/documentos");
 
-        grupo.MapGet("/", (DocumentosService s, EstadoDocumento? estado, string? buscar, CancellationToken ct, int pagina = 1, int tamano = 20) =>
-            s.ListarMisDocumentosAsync(estado, buscar, pagina, tamano, ct));
+        // ?estado=A&estado=B · ?todos=true (Admin) · ?desde= fecha de envío mínima
+        grupo.MapGet("/", (DocumentosService s, EstadoDocumento[]? estado, string? buscar, bool? todos, DateTime? desde,
+            CancellationToken ct, int pagina = 1, int tamano = 20) =>
+            s.ListarAsync(new FiltroDocumentos(estado, buscar, todos == true, desde?.ToUniversalTime(), pagina, tamano), ct));
 
         grupo.MapGet("/{id:int}", (int id, DocumentosService s, CancellationToken ct) => s.ObtenerAsync(id, ct));
 

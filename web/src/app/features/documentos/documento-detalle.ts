@@ -4,7 +4,7 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { DocumentosApi } from '../../core/api/documentos-api';
-import { Archivo, DocumentoDetalle } from '../../core/api/modelos';
+import { Archivo, DocumentoDetalle, OrigenDetalle } from '../../core/api/modelos';
 import { mensajeError } from '../../core/http/errores';
 import { EstadoBadge } from '../../shared/ui/estado-badge';
 import { HistorialTimeline } from '../../shared/ui/historial-timeline';
@@ -22,7 +22,7 @@ const DIALOGO: Record<Accion, { titulo: string; campo: string; obligatorio: bool
   selector: 'app-documento-detalle',
   imports: [RouterLink, CurrencyPipe, DatePipe, DecimalPipe, UpperCasePipe, EstadoBadge, Seguimiento, HistorialTimeline],
   template: `
-    <a routerLink="/documentos" class="text-sm text-primario-700 hover:underline">← Mis documentos</a>
+    <a [routerLink]="regreso().ruta" class="text-sm text-primario-700 hover:underline">← {{ regreso().etiqueta }}</a>
 
     @if (error() && !documento()) {
       <p class="mt-6 rounded-md bg-rechazado-50 px-4 py-3 text-sm text-rechazado-700" role="alert">{{ error() }}</p>
@@ -62,7 +62,12 @@ const DIALOGO: Record<Accion, { titulo: string; campo: string; obligatorio: bool
       </div>
 
       @if (mensaje(); as m) {
-        <p class="mt-4 rounded-md bg-autorizado-50 px-4 py-3 text-sm text-autorizado-700" role="status">{{ m }}</p>
+        <p class="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-md bg-autorizado-50 px-4 py-3 text-sm text-autorizado-700" role="status">
+          {{ m }}
+          @if (desde()) {
+            <a [routerLink]="regreso().ruta" class="font-medium underline">Volver a {{ regreso().etiqueta }}</a>
+          }
+        </p>
       }
       @if (error(); as e) {
         <p class="mt-4 rounded-md bg-rechazado-50 px-4 py-3 text-sm text-rechazado-700" role="alert">{{ e }}</p>
@@ -178,6 +183,8 @@ const DIALOGO: Record<Accion, { titulo: string; campo: string; obligatorio: bool
 })
 export class DocumentoDetallePagina {
   readonly id = input.required<string>();
+  /** Query param ?desde= para regresar a la bandeja de origen. */
+  readonly desde = input<OrigenDetalle>();
 
   protected readonly api = inject(DocumentosApi);
   private readonly sanitizer = inject(DomSanitizer);
@@ -194,6 +201,13 @@ export class DocumentoDetallePagina {
   protected readonly comentario = signal('');
   protected readonly errorDialogo = signal<string | null>(null);
 
+  protected readonly regreso = computed(() =>
+    this.desde() === 'aprobaciones'
+      ? { ruta: '/aprobaciones', etiqueta: 'Por aprobar' }
+      : this.desde() === 'tesoreria'
+        ? { ruta: '/tesoreria', etiqueta: 'Tesorería' }
+        : { ruta: '/documentos', etiqueta: 'Mis documentos' },
+  );
   protected readonly versionesAnteriores = computed(() => this.documento()?.archivos.filter((a) => !a.vigente) ?? []);
   protected readonly archivosMostrados = computed<Archivo[]>(() => {
     const archivos = this.documento()?.archivos ?? [];

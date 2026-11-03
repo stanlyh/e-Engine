@@ -55,7 +55,7 @@ En **Development**, `Seguridad:GruposSimulados` asigna grupos al usuario actual 
 |---|---|
 | `RutaArchivos` | Carpeta absoluta de los XML/PDF: `{año}/{mes}/{documentoId}/{guid}.ext` (en desarrollo: `D:\repos\e-Engine\docs`) |
 | `TamanoMaximoMb` | Límite por archivo (10 MB) |
-| `RfcEmpresa` | Si se configura, el RFC receptor del CFDI debe coincidir |
+| `RfcEmpresa` | Si se configura, el RFC receptor del CFDI debe coincidir. En desarrollo se usa `EKU9003173C9`, el RFC de pruebas del SAT |
 | `TiposComprobante` | Tipos aceptados (por defecto `I`, ingreso) |
 
 Al subir el XML se valida que sea CFDI 4.0 timbrado (sin DTD, para evitar XXE) y que el UUID no esté en otro documento. El PDF se valida por su firma `%PDF-`.
@@ -76,6 +76,9 @@ Al subir el XML se valida que sea CFDI 4.0 timbrado (sin DTD, para evitar XXE) y
 | POST | `/api/documentos/{id}/aprobar` `{ comentario? }` | Aprobador del paso actual |
 | POST | `/api/documentos/{id}/rechazar` `{ motivo }` | Aprobador del paso actual |
 | POST | `/api/documentos/{id}/procesar` `{ referencia, comentario? }` | Tesorería |
+| GET | `/api/aprobaciones/pendientes?buscar=&pagina=` | Aprobador: paso actual de sus grupos, sin los propios ni los que ya aprobó |
+| GET | `/api/aprobaciones/resueltos?buscar=&pagina=` | Aprobador: sus decisiones |
+| GET | `/api/tesoreria/bandeja?procesados=&buscar=&pagina=` | Tesorería |
 
 Las escrituras exigen el encabezado `X-XSRF-TOKEN`.
 
@@ -105,7 +108,7 @@ Las escrituras exigen el encabezado `X-XSRF-TOKEN`.
 - [x] Fase 3: API de documentos y archivos (XML/PDF en disco, lectura de CFDI, UUID único, acciones del flujo)
 - [x] Fase 4: shell de Angular (layout, sesión, guards, interceptor, Tailwind) y componentes compartidos (badge de estado, zona de carga, seguimiento, historial)
 - [x] Fase 5: Mis documentos (filtros y paginación), nuevo/corregir con XML y PDF (carga con progreso), detalle con seguimiento, historial, vista previa del PDF y acciones aprobar/rechazar/procesar
-- [ ] Fase 6: bandejas de aprobación y Tesorería
+- [x] Fase 6: bandejas "Por aprobar" (pendientes de mis grupos + resueltos por mí) y "Tesorería" (por procesar + procesados)
 - [ ] Fase 7: indicadores del dashboard
 - [ ] Fase 8: notificaciones por correo y administración de reglas
 - [ ] Fase 9: pruebas de integración y despliegue

@@ -156,3 +156,87 @@ export function rutaParaMonto(reglas: ReglaAprobacion[], monto: number): string[
   );
   return regla ? [...regla.pasos].sort((a, b) => a.orden - b.orden).map((p) => p.nombre) : null;
 }
+
+export interface PendienteAprobacion {
+  id: number;
+  folio: string;
+  descripcion: string;
+  creadoPor: string;
+  nombreEmisor: string | null;
+  rfcEmisor: string | null;
+  total: number | null;
+  moneda: string | null;
+  montoMxn: number | null;
+  pasoActual: string;
+  ordenPaso: number;
+  totalPasos: number;
+  esperaDesde: string | null;
+}
+
+export interface ResueltoPorMi {
+  id: number;
+  folio: string;
+  descripcion: string;
+  nombreEmisor: string | null;
+  total: number | null;
+  moneda: string | null;
+  paso: string;
+  miDecision: EstadoPaso;
+  comentario: string | null;
+  fechaResolucion: string;
+  estadoActual: EstadoDocumento;
+}
+
+export interface DocumentoTesoreria {
+  id: number;
+  folio: string;
+  descripcion: string;
+  creadoPor: string;
+  nombreEmisor: string | null;
+  rfcEmisor: string | null;
+  uuid: string | null;
+  total: number | null;
+  moneda: string | null;
+  montoMxn: number | null;
+  fechaAutorizacion: string;
+  fechaProcesado: string | null;
+  referenciaTesoreria: string | null;
+}
+
+/** De dónde se abrió el detalle, para el enlace de regreso (?desde=). */
+export type OrigenDetalle = 'aprobaciones' | 'tesoreria';
+
+export interface Indicador {
+  cantidad: number;
+  monto: number;
+}
+
+export interface Movimiento {
+  documentoId: number;
+  folio: string;
+  descripcion: string;
+  accion: AccionHistorial;
+  estadoNuevo: EstadoDocumento;
+  usuario: string;
+  comentario: string | null;
+  fecha: string;
+}
+
+export interface Dashboard {
+  todos: boolean;
+  enviadosDesde: string | null;
+  indicadores: Record<'enviados' | 'pendientes' | 'autorizados' | 'rechazados' | 'enTesoreria' | 'procesados', Indicador>;
+  esperanMiAprobacion: number | null;
+  porProcesar: Indicador | null;
+  movimientos: Movimiento[];
+}
+
+/**
+ * Filtros de la lista de documentos: un estado o un grupo de estados.
+ * "enviados" y "autorizados" coinciden con los indicadores del inicio.
+ */
+export const FILTROS_ESTADO: { clave: string; etiqueta: string; estados: EstadoDocumento[] }[] = [
+  ...ESTADOS.map((e) => ({ clave: e.valor as string, etiqueta: e.etiqueta, estados: [e.valor] })),
+  { clave: 'enviados', etiqueta: 'Enviados (todos menos borrador)', estados: ['EnAprobacion', 'Rechazado', 'EnTesoreria', 'Procesado'] },
+  { clave: 'autorizados', etiqueta: 'Autorizados (Tesorería + procesados)', estados: ['EnTesoreria', 'Procesado'] },
+];

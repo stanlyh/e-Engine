@@ -12,6 +12,7 @@ public sealed class AprobacionesDbContext(DbContextOptions<AprobacionesDbContext
 {
     public DbSet<Documento> Documentos => Set<Documento>();
     public DbSet<DocumentoAprobacion> DocumentoAprobaciones => Set<DocumentoAprobacion>();
+    public DbSet<DocumentoHistorial> DocumentoHistorial => Set<DocumentoHistorial>();
     public DbSet<Usuario> Usuarios => Set<Usuario>();
     public DbSet<ReglaAprobacion> ReglasAprobacion => Set<ReglaAprobacion>();
     public DbSet<ReglaPaso> ReglaPasos => Set<ReglaPaso>();

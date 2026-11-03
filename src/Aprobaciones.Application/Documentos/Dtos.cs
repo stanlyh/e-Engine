@@ -14,7 +14,13 @@ public sealed record DocumentoResumenDto(
     decimal? MontoMxn,
     string? PasoActual,
     DateTime FechaCreacion,
-    DateTime? FechaEnvio);
+    DateTime? FechaEnvio,
+    string CreadoPor);
+
+/// <param name="Todos">Todos los documentos (solo Admin); si no, los del usuario actual.</param>
+/// <param name="EnviadosDesde">Solo documentos enviados a partir de esta fecha (UTC).</param>
+public sealed record FiltroDocumentos(
+    IReadOnlyCollection<EstadoDocumento>? Estados, string? Buscar, bool Todos, DateTime? EnviadosDesde, int Pagina = 1, int Tamano = 20);
 
 public sealed record DocumentoDetalleDto(
     int Id,
