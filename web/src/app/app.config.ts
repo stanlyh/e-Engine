@@ -1,4 +1,4 @@
-import { provideHttpClient, withFetch, withInterceptors, withNoXsrfProtection } from '@angular/common/http';
+import { provideHttpClient, withInterceptors, withNoXsrfProtection } from '@angular/common/http';
 import { ApplicationConfig, LOCALE_ID, inject, provideAppInitializer, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { registerLocaleData } from '@angular/common';
 import localeEsMx from '@angular/common/locales/es-MX';
@@ -13,7 +13,8 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes, withComponentInputBinding()),
-    provideHttpClient(withFetch(), withInterceptors([apiInterceptor]), withNoXsrfProtection()),
+    // XHR (sin withFetch): fetch no reporta el progreso de subida de archivos.
+    provideHttpClient(withInterceptors([apiInterceptor]), withNoXsrfProtection()),
     provideAppInitializer(() => inject(Sesion).cargar()),
     { provide: LOCALE_ID, useValue: 'es-MX' },
   ],

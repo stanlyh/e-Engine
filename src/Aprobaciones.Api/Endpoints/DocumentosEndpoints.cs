@@ -47,10 +47,11 @@ internal static class DocumentosEndpoints
             int id, int archivoId, bool? descargar, DocumentosService s, HttpContext contexto, CancellationToken ct) =>
         {
             var (archivo, contenido) = await s.AbrirArchivoAsync(id, archivoId, ct);
-            // Contenido subido por usuarios: sin ejecución de scripts, sin adivinar el tipo y el XML siempre como descarga.
-            contexto.Response.Headers.ContentSecurityPolicy = "sandbox";
+            // Contenido subido por usuarios: sin adivinar el tipo y el XML siempre como descarga.
+            // Solo el PDF (validado por firma) se muestra en línea; CSP sandbox bloquearía el visor de PDF del navegador.
             contexto.Response.Headers.XContentTypeOptions = "nosniff";
             var enLinea = archivo.Tipo == TipoArchivo.Pdf && descargar != true;
+            if (!enLinea) contexto.Response.Headers.ContentSecurityPolicy = "sandbox";
             var disposicion = new ContentDispositionHeaderValue(enLinea ? "inline" : "attachment");
             disposicion.SetHttpFileName(archivo.NombreOriginal);
             contexto.Response.Headers.ContentDisposition = disposicion.ToString();

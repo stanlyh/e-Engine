@@ -8,6 +8,13 @@ interface ItemMenu {
   roles?: Rol[];
 }
 
+const ETIQUETA_ROL: Record<Rol, string> = {
+  Usuario: 'Usuario',
+  Aprobador: 'Aprobador',
+  Tesoreria: 'Tesorería',
+  Admin: 'Administrador',
+};
+
 const MENU: ItemMenu[] = [
   { ruta: '/', etiqueta: 'Inicio' },
   { ruta: '/documentos', etiqueta: 'Mis documentos', roles: ['Usuario'] },
@@ -55,7 +62,7 @@ const MENU: ItemMenu[] = [
           @if (sesion.usuario(); as u) {
             <div class="text-right">
               <p class="text-sm font-medium">{{ u.nombre }}</p>
-              <p class="text-xs text-slate-500">{{ u.roles.join(' · ') }}</p>
+              <p class="text-xs text-slate-500">{{ rolesVisibles() }}</p>
             </div>
           }
         </header>
@@ -73,6 +80,7 @@ const MENU: ItemMenu[] = [
 export class Shell {
   protected readonly sesion = inject(Sesion);
   protected readonly menuAbierto = signal(false);
+  protected readonly rolesVisibles = computed(() => (this.sesion.usuario()?.roles ?? []).map((r) => ETIQUETA_ROL[r]).join(' · '));
   protected readonly menu = computed(() =>
     this.sesion.usuario() ? MENU.filter((i) => !i.roles || this.sesion.tieneRol(...i.roles)) : [],
   );

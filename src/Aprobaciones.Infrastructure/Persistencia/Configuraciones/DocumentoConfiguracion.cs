@@ -34,7 +34,9 @@ internal sealed class DocumentoConfiguracion : IEntityTypeConfiguration<Document
             c.Property(x => x.RfcReceptor).HasColumnName("CfdiRfcReceptor").HasMaxLength(13);
             c.Property(x => x.Serie).HasColumnName("CfdiSerie").HasMaxLength(25);
             c.Property(x => x.Folio).HasColumnName("CfdiFolio").HasMaxLength(40);
-            c.Property(x => x.Fecha).HasColumnName("CfdiFecha");
+            // Hora local de emisión del CFDI (sin zona): no se convierte a UTC.
+            c.Property(x => x.Fecha).HasColumnName("CfdiFecha")
+                .HasConversion(v => v, v => DateTime.SpecifyKind(v, DateTimeKind.Unspecified));
             c.Property(x => x.SubTotal).HasColumnName("CfdiSubTotal").HasPrecision(18, 6);
             c.Property(x => x.Total).HasColumnName("CfdiTotal").HasPrecision(18, 6);
             c.Property(x => x.Moneda).HasColumnName("CfdiMoneda").HasMaxLength(3);

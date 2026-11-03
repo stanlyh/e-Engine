@@ -26,5 +26,11 @@ public sealed class AprobacionesDbContext(DbContextOptions<AprobacionesDbContext
     {
         configurationBuilder.Properties<decimal>().HavePrecision(18, 2);
         configurationBuilder.Properties<string>().HaveMaxLength(200);
+        // Las fechas se guardan en UTC; al leerlas se marcan como UTC para que el JSON lleve la "Z".
+        configurationBuilder.Properties<DateTime>().HaveConversion<FechaUtcConverter>();
     }
 }
+
+internal sealed class FechaUtcConverter() : Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter<DateTime, DateTime>(
+    v => v.Kind == DateTimeKind.Utc ? v : v.ToUniversalTime(),
+    v => DateTime.SpecifyKind(v, DateTimeKind.Utc));

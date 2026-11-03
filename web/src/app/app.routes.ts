@@ -12,15 +12,25 @@ export const routes: Routes = [
         path: 'documentos',
         title: 'Mis documentos',
         canMatch: [requiereRol('Usuario')],
-        loadComponent: () => import('./features/pendiente/pendiente').then((m) => m.Pendiente),
-        data: { titulo: 'Mis documentos', fase: 5 },
+        loadComponent: () => import('./features/documentos/mis-documentos').then((m) => m.MisDocumentos),
       },
       {
         path: 'documentos/nuevo',
         title: 'Nuevo documento',
         canMatch: [requiereRol('Usuario')],
-        loadComponent: () => import('./features/pendiente/pendiente').then((m) => m.Pendiente),
-        data: { titulo: 'Nuevo documento', fase: 5 },
+        loadComponent: () => import('./features/documentos/documento-editor').then((m) => m.DocumentoEditor),
+      },
+      {
+        path: 'documentos/:id/editar',
+        title: 'Editar documento',
+        canMatch: [requiereRol('Usuario')],
+        loadComponent: () => import('./features/documentos/documento-editor').then((m) => m.DocumentoEditor),
+      },
+      {
+        // Lo ven también aprobadores y Tesorería; la API decide el acceso a cada documento.
+        path: 'documentos/:id',
+        title: 'Documento',
+        loadComponent: () => import('./features/documentos/documento-detalle').then((m) => m.DocumentoDetallePagina),
       },
       {
         path: 'aprobaciones',

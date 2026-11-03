@@ -103,8 +103,8 @@ Las escrituras exigen el encabezado `X-XSRF-TOKEN`.
 - [x] Fase 1: solución, BD, migración inicial con reglas de ejemplo, Windows Auth, grupos → roles, antiforgery
 - [x] Fase 2: dominio y máquina de estados con pruebas
 - [x] Fase 3: API de documentos y archivos (XML/PDF en disco, lectura de CFDI, UUID único, acciones del flujo)
-- [~] Fase 4: shell de Angular (layout, sesión, guards, interceptor, Tailwind) listo; faltan componentes compartidos
-- [ ] Fase 5: Mis documentos, nuevo/editar con 2 archivos, detalle con seguimiento
+- [x] Fase 4: shell de Angular (layout, sesión, guards, interceptor, Tailwind) y componentes compartidos (badge de estado, zona de carga, seguimiento, historial)
+- [x] Fase 5: Mis documentos (filtros y paginación), nuevo/corregir con XML y PDF (carga con progreso), detalle con seguimiento, historial, vista previa del PDF y acciones aprobar/rechazar/procesar
 - [ ] Fase 6: bandejas de aprobación y Tesorería
 - [ ] Fase 7: indicadores del dashboard
 - [ ] Fase 8: notificaciones por correo y administración de reglas

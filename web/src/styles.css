@@ -1,27 +1,70 @@
 @import 'tailwindcss';
 
-/* Colores por estado: se usan igual en indicadores, badges y línea de tiempo. */
+/* Colores por estado: se usan igual en indicadores, badges, seguimiento e historial. */
 @theme {
   --font-sans: 'Segoe UI', system-ui, sans-serif;
 
   --color-primario-50: var(--color-indigo-50);
+  --color-primario-100: var(--color-indigo-100);
+  --color-primario-500: var(--color-indigo-500);
+  --color-primario-600: var(--color-indigo-600);
   --color-primario-700: var(--color-indigo-700);
 
+  --color-enviado-50: var(--color-sky-50);
   --color-enviado-500: var(--color-sky-500);
+  --color-enviado-700: var(--color-sky-700);
 
   --color-pendiente-50: var(--color-amber-50);
+  --color-pendiente-200: var(--color-amber-200);
   --color-pendiente-500: var(--color-amber-500);
+  --color-pendiente-700: var(--color-amber-700);
   --color-pendiente-800: var(--color-amber-800);
 
+  --color-autorizado-50: var(--color-emerald-50);
+  --color-autorizado-200: var(--color-emerald-200);
   --color-autorizado-500: var(--color-emerald-500);
+  --color-autorizado-600: var(--color-emerald-600);
+  --color-autorizado-700: var(--color-emerald-700);
 
   --color-rechazado-50: var(--color-red-50);
   --color-rechazado-200: var(--color-red-200);
   --color-rechazado-500: var(--color-red-500);
+  --color-rechazado-600: var(--color-red-600);
   --color-rechazado-700: var(--color-red-700);
   --color-rechazado-800: var(--color-red-800);
 
+  --color-tesoreria-50: var(--color-blue-50);
+  --color-tesoreria-200: var(--color-blue-200);
   --color-tesoreria-500: var(--color-blue-600);
+  --color-tesoreria-700: var(--color-blue-700);
 
-  --color-procesado-500: var(--color-slate-500);
+  --color-procesado-50: var(--color-teal-50);
+  --color-procesado-500: var(--color-teal-600);
+  --color-procesado-700: var(--color-teal-700);
+}
+
+/* Componentes base reutilizables. */
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors
+    focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primario-500
+    disabled:cursor-not-allowed disabled:opacity-50;
+}
+@utility btn-primario {
+  @apply btn bg-primario-600 text-white hover:bg-primario-700;
+}
+@utility btn-secundario {
+  @apply btn border border-slate-300 bg-white text-slate-700 hover:bg-slate-50;
+}
+@utility btn-exito {
+  @apply btn bg-autorizado-600 text-white hover:bg-autorizado-700;
+}
+@utility btn-peligro {
+  @apply btn bg-rechazado-600 text-white hover:bg-rechazado-700;
+}
+@utility campo {
+  @apply block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm shadow-xs
+    placeholder:text-slate-400 focus:border-primario-500 focus:ring-2 focus:ring-primario-100 focus:outline-none;
+}
+@utility tarjeta {
+  @apply rounded-lg border border-slate-200 bg-white shadow-xs;
 }
