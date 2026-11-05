@@ -104,6 +104,7 @@ export interface DocumentoResumen {
   pasoActual: string | null;
   fechaCreacion: string;
   fechaEnvio: string | null;
+  creadoPor: string;
 }
 
 export interface Pagina<T> {

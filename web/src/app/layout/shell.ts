@@ -45,11 +45,12 @@ const MENU: ItemMenu[] = [
           </button>
         </div>
         <nav class="flex-col gap-1 px-3 pb-4 md:flex" [class.hidden]="!menuAbierto()" [class.flex]="menuAbierto()">
-          @for (item of menu(); track item.ruta) {
+          @for (item of menu(); track item.etiqueta) {
             <a
               [routerLink]="item.ruta"
+              [queryParams]="item.parametros"
               routerLinkActive="bg-primario-50 text-primario-700 font-medium"
-              [routerLinkActiveOptions]="{ exact: true }"
+              [routerLinkActiveOptions]="{ paths: 'exact', queryParams: 'exact', matrixParams: 'ignored', fragment: 'ignored' }"
               class="rounded-md px-3 py-2 text-sm text-slate-700 hover:bg-slate-100"
               (click)="menuAbierto.set(false)"
             >
