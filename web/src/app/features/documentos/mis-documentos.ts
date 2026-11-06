@@ -19,10 +19,10 @@ const TAMANO_PAGINA = 20;
 
     <form class="mt-6 flex flex-col gap-3 sm:flex-row" (submit)="$event.preventDefault(); buscar()">
       <label class="sr-only" for="filtro-estado">Estado</label>
-      <select id="filtro-estado" class="campo sm:w-64" [value]="filtroClave()" (change)="cambiarEstado($event)">
-        <option value="">Todos los estados</option>
+      <select id="filtro-estado" class="campo sm:w-64" (change)="cambiarEstado($event)">
+        <option value="" [selected]="!filtroClave()">Todos los estados</option>
         @for (f of filtros; track f.clave) {
-          <option [value]="f.clave">{{ f.etiqueta }}</option>
+          <option [value]="f.clave" [selected]="f.clave === filtroClave()">{{ f.etiqueta }}</option>
         }
       </select>
       <label class="sr-only" for="filtro-texto">Buscar</label>
@@ -63,41 +63,56 @@ const TAMANO_PAGINA = 20;
             <thead class="bg-slate-50 text-left text-slate-600">
               <tr>
                 <th class="px-4 py-3 font-medium">Folio</th>
-                <th class="px-4 py-3 font-medium">Descripción</th>
-                <th class="hidden px-4 py-3 font-medium md:table-cell">Emisor</th>
-                <th class="px-4 py-3 text-right font-medium">Total</th>
-                <th class="px-4 py-3 font-medium">Estado</th>
-                <th class="hidden px-4 py-3 font-medium lg:table-cell">Creado</th>
+                <th class="hidden px-4 py-3 font-medium sm:table-cell">Descripción</th>
+                <th class="hidden px-4 py-3 font-medium lg:table-cell">Emisor</th>
+                <th class="px-4 py-3 text-right font-medium lg:whitespace-nowrap">Monto (MXN)</th>
+                <th class="hidden px-4 py-3 font-medium sm:table-cell">Estado</th>
+                <th class="hidden px-4 py-3 font-medium xl:table-cell">Creado</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
               @for (d of pagina()?.elementos; track d.id) {
                 <tr class="hover:bg-slate-50">
-                  <td class="px-4 py-3 whitespace-nowrap">
-                    <a [routerLink]="['/documentos', d.id]" class="font-medium text-primario-700 hover:underline">{{ d.folio }}</a>
-                  </td>
-                  <td class="max-w-xs px-4 py-3">
-                    <span class="block truncate" [title]="d.descripcion">{{ d.descripcion }}</span>
+                  <td class="px-4 py-3 align-top sm:align-middle">
+                    <a [routerLink]="['/documentos', d.id]" class="font-medium whitespace-nowrap text-primario-700 hover:underline">{{ d.folio }}</a>
+                    <!-- En pantallas angostas, descripción y estado se integran a las dos columnas visibles. -->
+                    <span class="mt-1 line-clamp-2 wrap-anywhere text-slate-700 sm:hidden" [title]="d.descripcion">{{ d.descripcion }}</span>
                     @if (verTodos()) {
-                      <span class="text-xs text-slate-500">Cargó {{ d.creadoPor }}</span>
+                      <span class="mt-0.5 block wrap-anywhere text-xs text-slate-500 sm:hidden">Cargó {{ d.creadoPor }}</span>
                     }
                   </td>
-                  <td class="hidden max-w-xs truncate px-4 py-3 md:table-cell">
+                  <!-- w-1/2 + max-w-0: los textos largos se recortan y reparten el espacio que dejan las demás columnas. -->
+                  <td class="hidden w-1/2 max-w-0 px-4 py-3 sm:table-cell">
+                    <span class="block truncate" [title]="d.descripcion">{{ d.descripcion }}</span>
+                    @if (verTodos()) {
+                      <span class="block truncate text-xs text-slate-500" [title]="d.creadoPor">Cargó {{ d.creadoPor }}</span>
+                    }
+                  </td>
+                  <td class="hidden w-1/2 max-w-0 truncate px-4 py-3 lg:table-cell" [title]="d.nombreEmisor ?? ''">
                     {{ d.nombreEmisor ?? '—' }}
                     @if (d.rfcEmisor) {
                       <span class="block text-xs text-slate-500">{{ d.rfcEmisor }}</span>
                     }
                   </td>
-                  <td class="px-4 py-3 text-right whitespace-nowrap tabular-nums">
-                    {{ d.total === null ? '—' : (d.total | currency: d.moneda ?? 'MXN' : 'symbol-narrow') }}
+                  <td class="px-4 py-3 text-right align-top whitespace-nowrap tabular-nums sm:align-middle">
+                    {{ d.montoMxn === null ? '—' : (d.montoMxn | currency: 'MXN' : 'symbol-narrow') }}
+                    @if (d.moneda && d.moneda !== 'MXN') {
+                      <span class="block text-xs text-slate-500">{{ d.total | currency: d.moneda : 'symbol-narrow' }} {{ d.moneda }}</span>
+                    }
+                    <span class="mt-1 block whitespace-normal sm:hidden">
+                      <app-estado-badge [estado]="d.estado" />
+                      @if (d.pasoActual) {
+                        <span class="mt-1 block text-xs text-slate-500">{{ d.pasoActual }}</span>
+                      }
+                    </span>
                   </td>
-                  <td class="px-4 py-3">
+                  <td class="hidden px-4 py-3 whitespace-nowrap sm:table-cell">
                     <app-estado-badge [estado]="d.estado" />
                     @if (d.pasoActual) {
                       <span class="mt-1 block text-xs text-slate-500">{{ d.pasoActual }}</span>
                     }
                   </td>
-                  <td class="hidden px-4 py-3 whitespace-nowrap text-slate-500 lg:table-cell">
+                  <td class="hidden px-4 py-3 whitespace-nowrap text-slate-500 xl:table-cell">
                     {{ d.fechaCreacion | date: 'dd/MM/yyyy' }}
                   </td>
                 </tr>

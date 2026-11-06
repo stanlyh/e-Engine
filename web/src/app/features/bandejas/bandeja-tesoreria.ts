@@ -13,8 +13,8 @@ import { Paginacion } from '../../shared/ui/paginacion';
     <h1 class="text-2xl font-semibold tracking-tight">Tesorería</h1>
     <p class="mt-1 text-sm text-slate-500">Documentos autorizados por toda su cadena de aprobación.</p>
 
-    <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <div class="inline-flex rounded-lg border border-slate-200 bg-white p-1" role="tablist">
+    <div class="mt-6 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      <div class="inline-flex self-start rounded-lg border border-slate-200 bg-white p-1" role="tablist">
         @for (t of pestanas; track t.procesados) {
           <button
             type="button"
@@ -33,7 +33,7 @@ import { Paginacion } from '../../shared/ui/paginacion';
         <input
           id="buscar-tesoreria"
           type="search"
-          class="campo sm:w-72"
+          class="campo min-w-0 flex-1 lg:w-72 lg:flex-none"
           placeholder="Folio, emisor, RFC o UUID"
           [value]="texto()"
           (input)="texto.set($any($event.target).value)"
@@ -65,45 +65,53 @@ import { Paginacion } from '../../shared/ui/paginacion';
               <thead class="bg-slate-50 text-left text-slate-600">
                 <tr>
                   <th class="px-4 py-3 font-medium">Folio</th>
-                  <th class="px-4 py-3 font-medium">Emisor</th>
-                  <th class="hidden px-4 py-3 font-medium md:table-cell">Descripción</th>
-                  <th class="px-4 py-3 text-right font-medium">Monto (MXN)</th>
+                  <th class="hidden px-4 py-3 font-medium sm:table-cell">Emisor</th>
+                  <th class="hidden px-4 py-3 font-medium xl:table-cell">Descripción</th>
+                  <th class="px-4 py-3 text-right font-medium lg:whitespace-nowrap">Monto (MXN)</th>
                   @if (procesados()) {
                     <th class="hidden px-4 py-3 font-medium sm:table-cell">Referencia</th>
-                    <th class="hidden px-4 py-3 font-medium lg:table-cell">Procesado</th>
+                    <th class="hidden px-4 py-3 font-medium xl:table-cell">Procesado</th>
                   } @else {
-                    <th class="hidden px-4 py-3 font-medium lg:table-cell">Autorizado</th>
+                    <th class="hidden px-4 py-3 font-medium xl:table-cell">Autorizado</th>
                   }
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100">
                 @for (d of p.elementos; track d.id) {
                   <tr class="hover:bg-slate-50">
-                    <td class="px-4 py-3 whitespace-nowrap">
-                      <a [routerLink]="['/documentos', d.id]" [queryParams]="{ desde: 'tesoreria' }" class="font-medium text-primario-700 hover:underline">{{ d.folio }}</a>
+                    <td class="px-4 py-3 align-top sm:align-middle">
+                      <a [routerLink]="['/documentos', d.id]" [queryParams]="{ desde: 'tesoreria' }" class="font-medium whitespace-nowrap text-primario-700 hover:underline">{{ d.folio }}</a>
+                      <!-- En pantallas angostas, emisor, descripción y referencia se integran a la primera columna. -->
+                      <span class="mt-1 line-clamp-2 wrap-anywhere text-slate-700 sm:hidden" [title]="d.nombreEmisor ?? ''">{{ d.nombreEmisor ?? '—' }}</span>
+                      <span class="block text-xs text-slate-500 sm:hidden">{{ d.rfcEmisor }}</span>
+                      <span class="mt-0.5 line-clamp-2 wrap-anywhere text-xs text-slate-500 sm:hidden" [title]="d.descripcion">{{ d.descripcion }}</span>
                       @if (procesados()) {
-                        <span class="block text-xs text-slate-500 sm:hidden">Ref. {{ d.referenciaTesoreria }}</span>
+                        <span class="mt-0.5 line-clamp-2 wrap-anywhere text-xs text-slate-500 sm:hidden" [title]="d.referenciaTesoreria ?? ''">Ref. {{ d.referenciaTesoreria }}</span>
                       }
                     </td>
-                    <td class="max-w-xs px-4 py-3">
-                      <span class="block truncate">{{ d.nombreEmisor ?? '—' }}</span>
-                      <span class="text-xs text-slate-500">{{ d.rfcEmisor }}</span>
+                    <!-- w-1/2 + max-w-0: los textos largos se recortan y reparten el espacio que dejan las demás columnas. -->
+                    <td class="hidden w-1/2 max-w-0 px-4 py-3 sm:table-cell">
+                      <span class="block truncate" [title]="d.nombreEmisor ?? ''">{{ d.nombreEmisor ?? '—' }}</span>
+                      <span class="block text-xs text-slate-500">{{ d.rfcEmisor }}</span>
+                      <span class="block truncate text-xs text-slate-500 xl:hidden" [title]="d.descripcion">{{ d.descripcion }}</span>
                     </td>
-                    <td class="hidden max-w-xs px-4 py-3 md:table-cell">
+                    <td class="hidden w-1/2 max-w-0 px-4 py-3 xl:table-cell">
                       <span class="block truncate" [title]="d.descripcion">{{ d.descripcion }}</span>
-                      <span class="text-xs text-slate-500">Cargó {{ d.creadoPor }}</span>
+                      <span class="block truncate text-xs text-slate-500" [title]="d.creadoPor">Cargó {{ d.creadoPor }}</span>
                     </td>
-                    <td class="px-4 py-3 text-right whitespace-nowrap tabular-nums">
+                    <td class="px-4 py-3 text-right align-top whitespace-nowrap tabular-nums sm:align-middle">
                       {{ d.montoMxn === null ? '—' : (d.montoMxn | currency: 'MXN' : 'symbol-narrow') }}
                       @if (d.moneda && d.moneda !== 'MXN') {
                         <span class="block text-xs text-slate-500">{{ d.total | currency: d.moneda : 'symbol-narrow' }} {{ d.moneda }}</span>
                       }
                     </td>
                     @if (procesados()) {
-                      <td class="hidden px-4 py-3 whitespace-nowrap sm:table-cell">{{ d.referenciaTesoreria }}</td>
-                      <td class="hidden px-4 py-3 whitespace-nowrap text-slate-500 lg:table-cell">{{ d.fechaProcesado | date: 'dd/MM/yyyy HH:mm' }}</td>
+                      <td class="hidden max-w-36 px-4 py-3 sm:table-cell">
+                        <span class="block truncate" [title]="d.referenciaTesoreria ?? ''">{{ d.referenciaTesoreria }}</span>
+                      </td>
+                      <td class="hidden px-4 py-3 whitespace-nowrap text-slate-500 xl:table-cell">{{ d.fechaProcesado | date: 'dd/MM/yyyy HH:mm' }}</td>
                     } @else {
-                      <td class="hidden px-4 py-3 whitespace-nowrap text-slate-500 lg:table-cell" [title]="d.fechaAutorizacion | date: 'dd/MM/yyyy HH:mm'">
+                      <td class="hidden px-4 py-3 whitespace-nowrap text-slate-500 xl:table-cell" [title]="d.fechaAutorizacion | date: 'dd/MM/yyyy HH:mm'">
                         {{ d.fechaAutorizacion | haceTiempo }}
                       </td>
                     }

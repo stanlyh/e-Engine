@@ -1,7 +1,7 @@
 import { CurrencyPipe, DatePipe } from '@angular/common';
 import { httpResource } from '@angular/common/http';
-import { Component, computed, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Component, computed, inject, input } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
 import { Sesion } from '../../core/auth/sesion';
 import { AccionHistorial, Dashboard, ETIQUETA_ACCION, Indicador, ReglaAprobacion } from '../../core/api/modelos';
 import { HaceTiempoPipe } from '../../shared/hace-tiempo.pipe';
@@ -44,7 +44,7 @@ const PUNTO_ACCION: Partial<Record<AccionHistorial, string>> = {
       <div>
         <h1 class="text-2xl font-semibold tracking-tight">Hola, {{ sesion.nombre() }}</h1>
         <p class="mt-1 text-sm text-slate-500">
-          {{ todos() ? 'Todos los documentos' : 'Tus documentos' }} · enviados {{ etiquetaPeriodo().toLowerCase() }}
+          {{ verTodos() ? 'Todos los documentos' : 'Tus documentos' }} · enviados {{ etiquetaPeriodo().toLowerCase() }}
         </p>
       </div>
       <div class="flex flex-wrap items-center gap-2">
@@ -54,9 +54,9 @@ const PUNTO_ACCION: Partial<Record<AccionHistorial, string>> = {
               <button
                 type="button"
                 class="rounded-md px-3 py-1.5 text-sm font-medium"
-                [class]="todos() === op ? 'bg-primario-600 text-white' : 'text-slate-600 hover:bg-slate-100'"
-                [attr.aria-pressed]="todos() === op"
-                (click)="todos.set(op)"
+                [class]="verTodos() === op ? 'bg-primario-600 text-white' : 'text-slate-600 hover:bg-slate-100'"
+                [attr.aria-pressed]="verTodos() === op"
+                (click)="actualizarUrl({ todos: op ? 'true' : null })"
               >
                 {{ op ? 'Todos' : 'Míos' }}
               </button>
@@ -64,9 +64,9 @@ const PUNTO_ACCION: Partial<Record<AccionHistorial, string>> = {
           </div>
         }
         <label class="sr-only" for="periodo">Periodo</label>
-        <select id="periodo" class="campo w-auto" [value]="periodo()" (change)="periodo.set($any($event.target).value)">
+        <select id="periodo" class="campo w-auto" (change)="cambiarPeriodo($any($event.target).value)">
           @for (p of periodos; track p.valor) {
-            <option [value]="p.valor">{{ p.etiqueta }}</option>
+            <option [value]="p.valor" [selected]="p.valor === periodoActivo()">{{ p.etiqueta }}</option>
           }
         </select>
       </div>
@@ -122,7 +122,7 @@ const PUNTO_ACCION: Partial<Record<AccionHistorial, string>> = {
       }
     </section>
 
-    <div class="mt-8 grid gap-6 lg:grid-cols-5">
+    <div class="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-5">
       <section class="tarjeta p-5 lg:col-span-3" aria-labelledby="titulo-movimientos">
         <h2 id="titulo-movimientos" class="text-sm font-semibold text-slate-800">Últimos movimientos</h2>
         @if (datos(); as d) {
@@ -182,21 +182,27 @@ const PUNTO_ACCION: Partial<Record<AccionHistorial, string>> = {
   `,
 })
 export class Home {
+  /** Periodo y alcance viven en la URL para conservarse al regresar de una lista o recargar. */
+  readonly periodo = input<string>();
+  readonly todos = input<string>();
+
   protected readonly sesion = inject(Sesion);
+  private readonly router = inject(Router);
   protected readonly periodos = PERIODOS;
   protected readonly tarjetas = TARJETAS;
   protected readonly etiquetaAccion = ETIQUETA_ACCION;
   protected readonly puntoAccion = PUNTO_ACCION;
 
   protected readonly esAdmin = computed(() => this.sesion.tieneRol('Admin'));
-  protected readonly todos = signal(false);
-  protected readonly periodo = signal<Periodo>('todo');
-  protected readonly etiquetaPeriodo = computed(() => PERIODOS.find((p) => p.valor === this.periodo())!.etiqueta);
+  /** Un valor manual en la URL no debe romper la pantalla: sin Admin se ignora `todos`, y un periodo desconocido es "todo". */
+  protected readonly verTodos = computed(() => this.esAdmin() && this.todos() === 'true');
+  protected readonly periodoActivo = computed<Periodo>(() => PERIODOS.find((p) => p.valor === this.periodo())?.valor ?? 'todo');
+  protected readonly etiquetaPeriodo = computed(() => PERIODOS.find((p) => p.valor === this.periodoActivo())!.etiqueta);
 
   /** Inicio del periodo en hora local, enviado como ISO (UTC). */
   private readonly desde = computed<string | null>(() => {
     const hoy = new Date();
-    switch (this.periodo()) {
+    switch (this.periodoActivo()) {
       case 'anio':
         return new Date(hoy.getFullYear(), 0, 1).toISOString();
       case 'mes':
@@ -210,7 +216,7 @@ export class Home {
 
   protected readonly dashboard = httpResource<Dashboard>(() => ({
     url: '/api/dashboard/indicadores',
-    params: { ...(this.todos() ? { todos: true } : {}), ...(this.desde() ? { desde: this.desde()! } : {}) },
+    params: { ...(this.verTodos() ? { todos: true } : {}), ...(this.desde() ? { desde: this.desde()! } : {}) },
   }));
   /** Conserva los números anteriores mientras se recalculan, para que las tarjetas no parpadeen. */
   private ultimo: Dashboard | undefined;
@@ -225,9 +231,18 @@ export class Home {
   protected parametrosLista(filtro: string): Record<string, string> {
     return {
       estado: filtro,
-      ...(this.todos() ? { todos: 'true' } : {}),
+      ...(this.verTodos() ? { todos: 'true' } : {}),
       ...(this.desde() ? { desde: this.desde()! } : {}),
     };
+  }
+
+  protected cambiarPeriodo(valor: Periodo): void {
+    this.actualizarUrl({ periodo: valor === 'todo' ? null : valor });
+  }
+
+  /** replaceUrl: cambiar el filtro no agrega pasos al botón Atrás. */
+  protected actualizarUrl(parametros: { periodo?: string | null; todos?: string | null }): void {
+    void this.router.navigate([], { queryParams: parametros, queryParamsHandling: 'merge', replaceUrl: true });
   }
 
   protected nombresPasos(regla: ReglaAprobacion): string {

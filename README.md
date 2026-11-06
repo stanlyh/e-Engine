@@ -109,6 +109,6 @@ Las escrituras exigen el encabezado `X-XSRF-TOKEN`.
 - [x] Fase 4: shell de Angular (layout, sesión, guards, interceptor, Tailwind) y componentes compartidos (badge de estado, zona de carga, seguimiento, historial)
 - [x] Fase 5: Mis documentos (filtros y paginación), nuevo/corregir con XML y PDF (carga con progreso), detalle con seguimiento, historial, vista previa del PDF y acciones aprobar/rechazar/procesar
 - [x] Fase 6: bandejas "Por aprobar" (pendientes de mis grupos + resueltos por mí) y "Tesorería" (por procesar + procesados)
-- [ ] Fase 7: indicadores del dashboard
+- [x] Fase 7: indicadores del inicio (6 tarjetas por alcance y periodo, trabajo pendiente por rol, últimos movimientos) enlazados a la lista filtrada; "Todos los documentos" para Admin
 - [ ] Fase 8: notificaciones por correo y administración de reglas
 - [ ] Fase 9: pruebas de integración y despliegue

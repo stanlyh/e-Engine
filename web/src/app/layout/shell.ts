@@ -7,6 +7,8 @@ interface ItemMenu {
   etiqueta: string;
   roles?: Rol[];
   parametros?: Record<string, string>;
+  /** Sigue activo aunque la URL traiga filtros propios de la pantalla. */
+  ignorarConsulta?: boolean;
 }
 
 const ETIQUETA_ROL: Record<Rol, string> = {
@@ -17,7 +19,7 @@ const ETIQUETA_ROL: Record<Rol, string> = {
 };
 
 const MENU: ItemMenu[] = [
-  { ruta: '/', etiqueta: 'Inicio' },
+  { ruta: '/', etiqueta: 'Inicio', ignorarConsulta: true },
   { ruta: '/documentos', etiqueta: 'Mis documentos', roles: ['Usuario'] },
   { ruta: '/documentos/nuevo', etiqueta: 'Nuevo documento', roles: ['Usuario'] },
   { ruta: '/documentos', etiqueta: 'Todos los documentos', roles: ['Admin'], parametros: { todos: 'true' } },
@@ -50,7 +52,7 @@ const MENU: ItemMenu[] = [
               [routerLink]="item.ruta"
               [queryParams]="item.parametros"
               routerLinkActive="bg-primario-50 text-primario-700 font-medium"
-              [routerLinkActiveOptions]="{ paths: 'exact', queryParams: 'exact', matrixParams: 'ignored', fragment: 'ignored' }"
+              [routerLinkActiveOptions]="{ paths: 'exact', queryParams: item.ignorarConsulta ? 'ignored' : 'exact', matrixParams: 'ignored', fragment: 'ignored' }"
               class="rounded-md px-3 py-2 text-sm text-slate-700 hover:bg-slate-100"
               (click)="menuAbierto.set(false)"
             >
