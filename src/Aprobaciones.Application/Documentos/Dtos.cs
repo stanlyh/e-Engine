@@ -54,7 +54,7 @@ public sealed record HistorialDto(
     AccionHistorial Accion, EstadoDocumento? EstadoAnterior, EstadoDocumento EstadoNuevo, UsuarioRefDto Usuario, string? Comentario, DateTime Fecha);
 
 /// <summary>Acciones que la pantalla puede mostrar al usuario actual.</summary>
-public sealed record PermisosDto(bool Editar, bool Enviar, bool Resolver, bool Procesar);
+public sealed record PermisosDto(bool Editar, bool Enviar, bool Resolver, bool Procesar, bool Eliminar);
 
 public sealed record Pagina<T>(IReadOnlyList<T> Elementos, int Total, int NumeroPagina, int TamanoPagina);
 

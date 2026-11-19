@@ -35,7 +35,9 @@ public sealed class AlmacenDiscoTests : IDisposable
         }
 
         _almacen.Eliminar(guardado.RutaRelativa);
-        Assert.Throws<FileNotFoundException>(() => _almacen.Abrir(guardado.RutaRelativa));
+        // Al quedar vacía, la carpeta del documento también se borra.
+        Assert.ThrowsAny<IOException>(() => _almacen.Abrir(guardado.RutaRelativa));
+        Assert.False(Directory.Exists(Path.Combine(_carpeta, Path.GetDirectoryName(guardado.RutaRelativa)!)));
     }
 
     [Theory]

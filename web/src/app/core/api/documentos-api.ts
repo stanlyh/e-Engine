@@ -45,6 +45,10 @@ export class DocumentosApi {
     });
   }
 
+  eliminar(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/${id}`);
+  }
+
   enviar(id: number): Observable<void> {
     return this.http.post<void>(`${this.base}/${id}/enviar`, null);
   }

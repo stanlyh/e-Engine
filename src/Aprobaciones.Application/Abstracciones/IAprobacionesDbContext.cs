@@ -1,4 +1,5 @@
 using Aprobaciones.Domain.Documentos;
+using Aprobaciones.Domain.Notificaciones;
 using Aprobaciones.Domain.Reglas;
 using Aprobaciones.Domain.Usuarios;
 using Microsoft.EntityFrameworkCore;
@@ -13,6 +14,7 @@ public interface IAprobacionesDbContext
     DbSet<Usuario> Usuarios { get; }
     DbSet<ReglaAprobacion> ReglasAprobacion { get; }
     DbSet<ReglaPaso> ReglaPasos { get; }
+    DbSet<Notificacion> Notificaciones { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

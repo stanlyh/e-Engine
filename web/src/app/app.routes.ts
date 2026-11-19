@@ -48,8 +48,10 @@ export const routes: Routes = [
         path: 'admin',
         title: 'Administración',
         canMatch: [requiereRol('Admin')],
-        loadComponent: () => import('./features/pendiente/pendiente').then((m) => m.Pendiente),
-        data: { titulo: 'Administración', fase: 8 },
+        loadComponent: () => import('./features/admin/administracion').then((m) => m.Administracion),
+        // Cambiar de pestaña también pasa por aquí: el guard confirma si hay reglas sin guardar.
+        canDeactivate: [(pantalla: { puedeSalir(): boolean }) => pantalla.puedeSalir()],
+        runGuardsAndResolvers: 'always',
       },
       {
         path: 'sin-acceso',

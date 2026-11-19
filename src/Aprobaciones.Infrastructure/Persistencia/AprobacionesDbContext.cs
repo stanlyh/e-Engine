@@ -1,5 +1,6 @@
 using Aprobaciones.Application.Abstracciones;
 using Aprobaciones.Domain.Documentos;
+using Aprobaciones.Domain.Notificaciones;
 using Aprobaciones.Domain.Reglas;
 using Aprobaciones.Domain.Usuarios;
 using Aprobaciones.Infrastructure.Persistencia.Configuraciones;
@@ -16,6 +17,7 @@ public sealed class AprobacionesDbContext(DbContextOptions<AprobacionesDbContext
     public DbSet<Usuario> Usuarios => Set<Usuario>();
     public DbSet<ReglaAprobacion> ReglasAprobacion => Set<ReglaAprobacion>();
     public DbSet<ReglaPaso> ReglaPasos => Set<ReglaPaso>();
+    public DbSet<Notificacion> Notificaciones => Set<Notificacion>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

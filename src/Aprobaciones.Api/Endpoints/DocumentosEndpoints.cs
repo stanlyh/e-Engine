@@ -60,6 +60,13 @@ internal static class DocumentosEndpoints
             return Results.File(contenido, archivo.ContentType, enableRangeProcessing: true);
         });
 
+        // Solo borradores que nunca se enviaron; lo valida el dominio.
+        grupo.MapDelete("/{id:int}", async (int id, DocumentosService s, CancellationToken ct) =>
+        {
+            await s.EliminarAsync(id, ct);
+            return Results.NoContent();
+        }).RequireAuthorization(Roles.Usuario);
+
         grupo.MapPost("/{id:int}/enviar", async (int id, DocumentosService s, CancellationToken ct) =>
         {
             await s.EnviarAsync(id, ct);

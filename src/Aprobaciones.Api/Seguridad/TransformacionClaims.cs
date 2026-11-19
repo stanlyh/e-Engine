@@ -25,7 +25,8 @@ internal sealed class TransformacionClaims(
     ILogger<TransformacionClaims> logger) : IClaimsTransformation
 {
     private const string TipoAutenticacion = "Aprobaciones";
-    private const string ClaveGruposAprobacion = "grupos-aprobacion";
+    /// <summary>Se borra al editar las reglas para que los nuevos grupos tomen efecto de inmediato.</summary>
+    public const string ClaveGruposAprobacion = "grupos-aprobacion";
 
     public async Task<ClaimsPrincipal> TransformAsync(ClaimsPrincipal principal)
     {

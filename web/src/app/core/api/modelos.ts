@@ -68,6 +68,8 @@ export interface Permisos {
   enviar: boolean;
   resolver: boolean;
   procesar: boolean;
+  /** Borrador que nunca se envió, solo para quien lo creó. */
+  eliminar: boolean;
 }
 
 export interface DocumentoDetalle {

@@ -34,6 +34,11 @@ internal sealed class AlmacenDisco(IOptions<OpcionesDocumentos> opciones, TimePr
     {
         var ruta = Resolver(rutaRelativa);
         if (File.Exists(ruta)) File.Delete(ruta);
+
+        // La carpeta {documentoId} queda vacía al borrar el último archivo de un documento eliminado.
+        var carpeta = Path.GetDirectoryName(ruta);
+        if (carpeta is not null && Directory.Exists(carpeta) && !Directory.EnumerateFileSystemEntries(carpeta).Any())
+            Directory.Delete(carpeta);
     }
 
     /// <summary>Convierte la ruta relativa en absoluta y garantiza que quede dentro de la carpeta base.</summary>

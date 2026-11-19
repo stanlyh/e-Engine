@@ -12,6 +12,7 @@ internal sealed class ReglaAprobacionConfiguracion : IEntityTypeConfiguration<Re
         b.ToTable("ReglasAprobacion");
         b.Property(r => r.Nombre).HasMaxLength(100);
         b.HasMany(r => r.Pasos).WithOne().HasForeignKey(p => p.ReglaAprobacionId).OnDelete(DeleteBehavior.Cascade);
+        b.HasOne<Usuario>().WithMany().HasForeignKey(r => r.ModificadoPorId).OnDelete(DeleteBehavior.Restrict);
 
         // Rangos iniciales; se editan después desde la pantalla de administración.
         // Los grupos deben existir en AD (formato DOMINIO\Grupo en producción).

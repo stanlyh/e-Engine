@@ -251,6 +251,86 @@ namespace Aprobaciones.Infrastructure.Persistencia.Migraciones
                     b.ToTable("DocumentoHistorial", (string)null);
                 });
 
+            modelBuilder.Entity("Aprobaciones.Domain.Notificaciones.Notificacion", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Asunto")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<DateTime?>("BloqueadaHasta")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CuerpoHtml")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CuerpoTexto")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Destinatarios")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<int?>("DocumentoId")
+                        .HasColumnType("int");
+
+                    b.Property<byte>("Estado")
+                        .HasColumnType("tinyint");
+
+                    b.Property<byte>("Evento")
+                        .HasColumnType("tinyint");
+
+                    b.Property<string>("ExcluirCuentas")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTime>("FechaCreacion")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("FechaEnvio")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("GrupoAd")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<int>("Intentos")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("ProximoIntento")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UltimoError")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int?>("UsuarioId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DocumentoId");
+
+                    b.HasIndex("UsuarioId");
+
+                    b.HasIndex("Estado", "ProximoIntento");
+
+                    b.ToTable("Notificaciones", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Notificaciones_Destino", "([UsuarioId] IS NOT NULL AND [GrupoAd] IS NULL) OR ([UsuarioId] IS NULL AND [GrupoAd] IS NOT NULL)");
+                        });
+                });
+
             modelBuilder.Entity("Aprobaciones.Domain.Reglas.ReglaAprobacion", b =>
                 {
                     b.Property<int>("Id")
@@ -261,6 +341,12 @@ namespace Aprobaciones.Infrastructure.Persistencia.Migraciones
 
                     b.Property<bool>("Activa")
                         .HasColumnType("bit");
+
+                    b.Property<DateTime?>("FechaModificacion")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("ModificadoPorId")
+                        .HasColumnType("int");
 
                     b.Property<decimal>("MontoDesde")
                         .HasPrecision(18, 2)
@@ -276,6 +362,8 @@ namespace Aprobaciones.Infrastructure.Persistencia.Migraciones
                         .HasColumnType("nvarchar(100)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ModificadoPorId");
 
                     b.ToTable("ReglasAprobacion", (string)null);
 
@@ -559,6 +647,27 @@ namespace Aprobaciones.Infrastructure.Persistencia.Migraciones
                         .HasForeignKey("UsuarioId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Aprobaciones.Domain.Notificaciones.Notificacion", b =>
+                {
+                    b.HasOne("Aprobaciones.Domain.Documentos.Documento", null)
+                        .WithMany()
+                        .HasForeignKey("DocumentoId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("Aprobaciones.Domain.Usuarios.Usuario", null)
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("Aprobaciones.Domain.Reglas.ReglaAprobacion", b =>
+                {
+                    b.HasOne("Aprobaciones.Domain.Usuarios.Usuario", null)
+                        .WithMany()
+                        .HasForeignKey("ModificadoPorId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("Aprobaciones.Domain.Reglas.ReglaPaso", b =>

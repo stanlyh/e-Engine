@@ -1,8 +1,10 @@
 using Aprobaciones.Application.Abstracciones;
+using Aprobaciones.Application.Notificaciones;
 using Aprobaciones.Domain;
 using Aprobaciones.Domain.Documentos;
 using Aprobaciones.Domain.Reglas;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Aprobaciones.Application.Documentos;
@@ -14,7 +16,9 @@ public sealed class DocumentosService(
     IAlmacenArchivos almacen,
     ILectorCfdi lectorCfdi,
     IOptions<OpcionesDocumentos> opciones,
-    TimeProvider reloj)
+    TimeProvider reloj,
+    Notificador notificador,
+    ILogger<DocumentosService> logger)
 {
     private static readonly byte[] FirmaPdf = "%PDF-"u8.ToArray();
 
@@ -76,6 +80,28 @@ public sealed class DocumentosService(
         }
     }
 
+    /// <summary>Elimina un borrador nunca enviado. Primero confirma la base de datos y después borra los archivos.</summary>
+    public async Task EliminarAsync(int id, CancellationToken ct)
+    {
+        var documento = await CargarParaModificarAsync(id, ct);
+        var rutas = documento.PrepararEliminacion(usuario.Id);
+        db.Documentos.Remove(documento);
+        await db.SaveChangesAsync(ct);
+
+        foreach (var ruta in rutas)
+        {
+            try
+            {
+                almacen.Eliminar(ruta);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                // El documento ya no existe; un archivo que no se pudo borrar solo ocupa espacio.
+                logger.LogWarning(ex, "No se pudo borrar el archivo {Ruta} del documento eliminado {DocumentoId}", ruta, id);
+            }
+        }
+    }
+
     public async Task EnviarAsync(int id, CancellationToken ct)
     {
         var documento = await CargarParaModificarAsync(id, ct);
@@ -83,6 +109,7 @@ public sealed class DocumentosService(
         var reglas = await db.ReglasAprobacion.Include(r => r.Pasos).Where(r => r.Activa).ToListAsync(ct);
 
         documento.Enviar(usuario.Id, ReglaAprobacion.ResolverRuta(reglas, monto), Ahora);
+        await notificador.AvisarPasoPendienteAsync(documento, ct);
         await db.SaveChangesAsync(ct);
     }
 
@@ -90,6 +117,8 @@ public sealed class DocumentosService(
     {
         var documento = await CargarParaModificarAsync(id, ct);
         documento.Aprobar(usuario.Id, usuario.PerteneceAGrupo, request.Comentario, Ahora);
+        if (documento.Estado == EstadoDocumento.EnTesoreria) await notificador.AvisarAutorizadoAsync(documento, request.Comentario, ct);
+        else await notificador.AvisarPasoPendienteAsync(documento, ct);
         await db.SaveChangesAsync(ct);
     }
 
@@ -97,6 +126,7 @@ public sealed class DocumentosService(
     {
         var documento = await CargarParaModificarAsync(id, ct);
         documento.Rechazar(usuario.Id, usuario.PerteneceAGrupo, request.Motivo, Ahora);
+        await notificador.AvisarRechazoAsync(documento, request.Motivo, ct);
         await db.SaveChangesAsync(ct);
     }
 
@@ -105,6 +135,7 @@ public sealed class DocumentosService(
         var documento = await CargarParaModificarAsync(id, ct);
         if (!usuario.EnRol(Roles.Tesoreria)) throw new AccesoDenegadoException("Solo Tesorería puede procesar documentos.");
         documento.Procesar(usuario.Id, request.Referencia, request.Comentario, Ahora);
+        await notificador.AvisarProcesadoAsync(documento, request.Comentario, ct);
         await db.SaveChangesAsync(ct);
     }
 
@@ -134,7 +165,8 @@ public sealed class DocumentosService(
             Enviar: esCreador && documento.EsEditable
                 && documento.ArchivoVigente(TipoArchivo.Xml) is not null && documento.ArchivoVigente(TipoArchivo.Pdf) is not null,
             Resolver: documento.PuedeResolver(usuario.Id, usuario.PerteneceAGrupo),
-            Procesar: documento.Estado == EstadoDocumento.EnTesoreria && usuario.EnRol(Roles.Tesoreria));
+            Procesar: documento.Estado == EstadoDocumento.EnTesoreria && usuario.EnRol(Roles.Tesoreria),
+            Eliminar: documento.EsEliminablePor(usuario.Id));
 
         return new DocumentoDetalleDto(
             documento.Id,

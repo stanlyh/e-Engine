@@ -1,8 +1,9 @@
 import { CurrencyPipe, DatePipe } from '@angular/common';
 import { httpResource } from '@angular/common/http';
-import { Component, computed, input, linkedSignal, signal } from '@angular/core';
+import { Component, computed, inject, input, linkedSignal, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FILTROS_ESTADO, Pagina, DocumentoResumen } from '../../core/api/modelos';
+import { Avisos } from '../../shared/avisos';
 import { EstadoBadge } from '../../shared/ui/estado-badge';
 import { Paginacion } from '../../shared/ui/paginacion';
 
@@ -16,6 +17,13 @@ const TAMANO_PAGINA = 20;
       <h1 class="text-2xl font-semibold tracking-tight">{{ verTodos() ? 'Todos los documentos' : 'Mis documentos' }}</h1>
       <a routerLink="/documentos/nuevo" class="btn-primario">+ Nuevo documento</a>
     </div>
+
+    @if (aviso(); as a) {
+      <p class="mt-4 flex items-center justify-between gap-3 rounded-md bg-autorizado-50 px-4 py-3 text-sm text-autorizado-700" role="status">
+        {{ a }}
+        <button type="button" class="font-semibold" aria-label="Cerrar aviso" (click)="aviso.set(null)">×</button>
+      </p>
+    }
 
     <form class="mt-6 flex flex-col gap-3 sm:flex-row" (submit)="$event.preventDefault(); buscar()">
       <label class="sr-only" for="filtro-estado">Estado</label>
@@ -135,6 +143,7 @@ export class MisDocumentos {
   readonly desde = input<string>();
 
   protected readonly filtros = FILTROS_ESTADO;
+  protected readonly aviso = signal(inject(Avisos).tomar());
   protected readonly verTodos = computed(() => this.todos() === 'true');
   protected readonly filtroClave = linkedSignal(() => this.estado() ?? '');
   protected readonly desdeFiltro = linkedSignal(() => this.desde() ?? null);

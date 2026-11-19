@@ -80,7 +80,37 @@ Al subir el XML se valida que sea CFDI 4.0 timbrado (sin DTD, para evitar XXE) y
 | GET | `/api/aprobaciones/resueltos?buscar=&pagina=` | Aprobador: sus decisiones |
 | GET | `/api/tesoreria/bandeja?procesados=&buscar=&pagina=` | Tesorería |
 
+| DELETE | `/api/documentos/{id}` | Creador, solo borradores que nunca se enviaron (borra también sus archivos) |
+| GET | `/api/admin/reglas` | Admin: reglas con su `version` |
+| PUT | `/api/admin/reglas` `{ version, reglas[] }` | Admin: reemplaza la tabla completa; 400 si hay huecos o traslapes, 409 si otra persona la cambió |
+| GET | `/api/admin/grupos/miembros?grupo=` | Admin: verifica un grupo de AD y quién recibirá los avisos |
+| GET | `/api/admin/correos/resumen` · `/api/admin/correos?estado=&pagina=` | Admin: cola de correos |
+| POST | `/api/admin/correos/{id}/reintentar` · `/api/admin/correos/prueba` | Admin |
+
 Las escrituras exigen el encabezado `X-XSRF-TOKEN`.
+
+## Avisos por correo
+
+Cada cambio de estado deja el correo en la tabla `Notificaciones`, en la misma transacción. Un proceso en segundo plano los envía cada `Correo:IntervaloSegundos` y reintenta con espera creciente (1, 5, 15 y 60 min); después queda **Fallida** y se puede reintentar desde Administración → Correos.
+
+| Evento | Destinatarios |
+|---|---|
+| Enviado, reenviado o paso aprobado | Miembros del grupo de AD del paso siguiente, sin quien cargó el documento ni quienes ya aprobaron en esa ronda |
+| Autorizado | Quien lo cargó y el grupo `Seguridad:GrupoTesoreria` |
+| Rechazado (con motivo) · Procesado (con referencia) | Quien lo cargó |
+
+Si nadie del destino tiene correo en AD, queda **Sin destinatarios**.
+
+| Clave | Uso |
+|---|---|
+| `Correo:Modo` | `Smtp`, `Carpeta` (escribe `.eml`, para desarrollo) o `Desactivado` (los avisos se acumulan como pendientes) |
+| `Correo:Host` · `Puerto` · `Ssl` | Servidor SMTP |
+| `Correo:UsarCredencialesWindows` | Autenticarse con la cuenta del Application Pool (relay de Exchange); si no, `Usuario` y `Contrasena` |
+| `Correo:Remitente` · `NombreRemitente` | Obligatorio para enviar |
+| `Correo:RedirigirA` | Ambientes de prueba: todo va a esta dirección, con los destinatarios reales al inicio del cuerpo |
+| `Notificaciones:UrlBase` | Dirección del sitio para los enlaces de los correos (vacía = sin enlace) |
+
+En **Development**, la sección `DirectorioSimulado` (usuarios con correo y grupos) reemplaza a AD; así se prueban los avisos fuera del dominio. Con `Correo:Modo = Carpeta` los correos quedan en `correos/` (ignorada por git).
 
 ## Desarrollo
 
@@ -91,7 +121,7 @@ Las escrituras exigen el encabezado `X-XSRF-TOKEN`.
    ```
 3. API: `dotnet run --project src/Aprobaciones.Api --launch-profile http` (http://localhost:5214)
 4. Angular: `cd web && npm start` (http://localhost:4200). Llama a la API con credenciales de Windows vía CORS.
-5. Pruebas: `dotnet test` (dominio + lector CFDI + almacén en disco)
+5. Pruebas: `dotnet test` (dominio, reglas, avisos, lector CFDI y almacén en disco)
 6. Con `sqlcmd` usa `-I`: los índices filtrados requieren `QUOTED_IDENTIFIER ON`.
 
 ## Producción (IIS)
@@ -100,6 +130,8 @@ Las escrituras exigen el encabezado `X-XSRF-TOKEN`.
 2. `dotnet publish src/Aprobaciones.Api -c Release`
 3. En el sitio IIS: **Windows Authentication habilitado** y **Anonymous deshabilitado**.
 4. La cuenta del Application Pool necesita acceso a SQL Server y permiso de escritura en `Documentos:RutaArchivos`.
+5. Correos: configurar la sección `Correo` y `Notificaciones:UrlBase`. El envío corre dentro del sitio, así que el Application Pool debe quedar activo: **Start Mode = AlwaysRunning**, **Idle Time-out = 0** y en el sitio **Preload Enabled = True**. Si IIS lo detiene, los avisos esperan en la cola hasta la siguiente petición.
+6. Desde Administración → Correos, "Enviarme un correo de prueba" confirma la configuración; "Verificar" en cada paso de las reglas confirma que el grupo existe en AD y quiénes tienen correo.
 
 ## Avance
 
@@ -110,5 +142,5 @@ Las escrituras exigen el encabezado `X-XSRF-TOKEN`.
 - [x] Fase 5: Mis documentos (filtros y paginación), nuevo/corregir con XML y PDF (carga con progreso), detalle con seguimiento, historial, vista previa del PDF y acciones aprobar/rechazar/procesar
 - [x] Fase 6: bandejas "Por aprobar" (pendientes de mis grupos + resueltos por mí) y "Tesorería" (por procesar + procesados)
 - [x] Fase 7: indicadores del inicio (6 tarjetas por alcance y periodo, trabajo pendiente por rol, últimos movimientos) enlazados a la lista filtrada; "Todos los documentos" para Admin
-- [ ] Fase 8: notificaciones por correo y administración de reglas
+- [x] Fase 8: avisos por correo (cola con reintentos), administración de reglas (validación de huecos y traslapes, verificación de grupos en AD) y eliminación de borradores
 - [ ] Fase 9: pruebas de integración y despliegue

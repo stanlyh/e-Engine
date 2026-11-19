@@ -4,6 +4,7 @@ using Aprobaciones.Api.Seguridad;
 using Aprobaciones.Application;
 using Aprobaciones.Application.Abstracciones;
 using Aprobaciones.Application.Documentos;
+using Aprobaciones.Application.Notificaciones;
 using Aprobaciones.Infrastructure;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Negotiate;
@@ -12,7 +13,11 @@ using System.Text.Json.Serialization;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddApplication();
-builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddInfrastructure(builder.Configuration, builder.Environment.IsDevelopment());
+builder.Services.AddOptions<OpcionesNotificaciones>()
+    .Bind(builder.Configuration.GetSection(OpcionesNotificaciones.Seccion))
+    // El grupo de Tesorería se configura una sola vez, en Seguridad.
+    .PostConfigure(o => o.GrupoTesoreria ??= builder.Configuration[$"{OpcionesSeguridad.Seccion}:{nameof(OpcionesSeguridad.GrupoTesoreria)}"]);
 builder.Services.AddOptions<OpcionesDocumentos>()
     .Bind(builder.Configuration.GetSection(OpcionesDocumentos.Seccion))
     .ValidateDataAnnotations()
@@ -74,6 +79,7 @@ app.MapReglasEndpoints();
 app.MapDocumentosEndpoints();
 app.MapBandejasEndpoints();
 app.MapDashboardEndpoints();
+app.MapAdminEndpoints();
 
 // Rutas de API inexistentes devuelven 404; el resto lo resuelve el router de Angular.
 app.MapFallback("/api/{**ruta}", () => Results.NotFound());

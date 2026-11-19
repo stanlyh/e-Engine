@@ -51,6 +51,17 @@ public sealed class Documento
 
     public bool EsEditable => Estado is EstadoDocumento.Borrador or EstadoDocumento.Rechazado;
 
+    /// <summary>Solo un borrador que nunca se envió: lo enviado ya tiene historial con otras personas.</summary>
+    public bool EsEliminablePor(int usuarioId) => usuarioId == CreadoPorId && Estado == EstadoDocumento.Borrador && Ronda == 0;
+
+    /// <summary>Valida que se pueda eliminar y devuelve las rutas de sus archivos para borrarlos del almacén.</summary>
+    public IReadOnlyList<string> PrepararEliminacion(int usuarioId)
+    {
+        if (usuarioId != CreadoPorId) throw new DomainException("Solo quien creó el documento puede eliminarlo.");
+        if (!EsEliminablePor(usuarioId)) throw new DomainException("Solo se pueden eliminar borradores que nunca se enviaron a aprobación.");
+        return [.. _archivos.Select(a => a.RutaRelativa)];
+    }
+
     public DocumentoArchivo? ArchivoVigente(TipoArchivo tipo) => _archivos.SingleOrDefault(a => a.Tipo == tipo && a.Vigente);
 
     public IEnumerable<DocumentoAprobacion> RondaActual => _aprobaciones.Where(a => a.Ronda == Ronda).OrderBy(a => a.Orden);

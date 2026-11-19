@@ -1,11 +1,13 @@
 import { CurrencyPipe, DatePipe, DecimalPipe, UpperCasePipe } from '@angular/common';
 import { Component, ElementRef, computed, effect, inject, input, signal, viewChild } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { DocumentosApi } from '../../core/api/documentos-api';
 import { Archivo, DocumentoDetalle, OrigenDetalle } from '../../core/api/modelos';
 import { mensajeError } from '../../core/http/errores';
+import { Avisos } from '../../shared/avisos';
+import { ConfirmarDialogo } from '../../shared/ui/confirmar-dialogo';
 import { EstadoBadge } from '../../shared/ui/estado-badge';
 import { HistorialTimeline } from '../../shared/ui/historial-timeline';
 import { Seguimiento } from '../../shared/ui/seguimiento';
@@ -20,7 +22,7 @@ const DIALOGO: Record<Accion, { titulo: string; campo: string; obligatorio: bool
 
 @Component({
   selector: 'app-documento-detalle',
-  imports: [RouterLink, CurrencyPipe, DatePipe, DecimalPipe, UpperCasePipe, EstadoBadge, Seguimiento, HistorialTimeline],
+  imports: [RouterLink, CurrencyPipe, DatePipe, DecimalPipe, UpperCasePipe, EstadoBadge, Seguimiento, HistorialTimeline, ConfirmarDialogo],
   template: `
     <a [routerLink]="regreso().ruta" class="text-sm text-primario-700 hover:underline">← {{ regreso().etiqueta }}</a>
 
@@ -41,6 +43,9 @@ const DIALOGO: Record<Accion, { titulo: string; campo: string; obligatorio: bool
         </div>
 
         <div class="flex flex-wrap gap-2">
+          @if (d.permisos.eliminar) {
+            <button type="button" class="btn-secundario text-rechazado-700" (click)="pedirEliminar()">Eliminar borrador</button>
+          }
           @if (d.permisos.editar) {
             <a [routerLink]="['/documentos', d.id, 'editar']" class="btn-secundario">
               {{ d.estado === 'Rechazado' ? 'Corregir' : 'Editar' }}
@@ -150,6 +155,16 @@ const DIALOGO: Record<Accion, { titulo: string; campo: string; obligatorio: bool
       </div>
     }
 
+    <app-confirmar-dialogo
+      #confirmarEliminar
+      titulo="Eliminar borrador"
+      [mensaje]="'Se eliminará ' + (documento()?.folio ?? '') + ' con sus archivos. Esta acción no se puede deshacer.'"
+      textoBoton="Eliminar"
+      [ocupado]="ocupado()"
+      [error]="errorEliminar()"
+      (confirmado)="eliminar()"
+    />
+
     <dialog
       #dialogo
       class="m-auto w-[min(32rem,calc(100vw-2rem))] rounded-lg p-0 shadow-xl backdrop:bg-slate-900/40"
@@ -189,6 +204,10 @@ export class DocumentoDetallePagina {
   protected readonly api = inject(DocumentosApi);
   private readonly sanitizer = inject(DomSanitizer);
   private readonly elementoDialogo = viewChild.required<ElementRef<HTMLDialogElement>>('dialogo');
+  private readonly confirmarEliminar = viewChild.required<ConfirmarDialogo>('confirmarEliminar');
+  private readonly router = inject(Router);
+  private readonly avisos = inject(Avisos);
+  protected readonly errorEliminar = signal<string | null>(null);
 
   protected readonly textos = DIALOGO;
   protected readonly documento = signal<DocumentoDetalle | null>(null);
@@ -258,6 +277,27 @@ export class DocumentoDetallePagina {
       await this.cargar(d.id);
     } catch (e) {
       this.errorDialogo.set(mensajeError(e));
+    } finally {
+      this.ocupado.set(false);
+    }
+  }
+
+  protected pedirEliminar(): void {
+    this.errorEliminar.set(null);
+    this.confirmarEliminar().abrir();
+  }
+
+  protected async eliminar(): Promise<void> {
+    const d = this.documento();
+    if (!d) return;
+    this.ocupado.set(true);
+    try {
+      await firstValueFrom(this.api.eliminar(d.id));
+      this.confirmarEliminar().cerrar();
+      this.avisos.mostrar(`Se eliminó el borrador ${d.folio}.`);
+      await this.router.navigate(['/documentos']);
+    } catch (e) {
+      this.errorEliminar.set(mensajeError(e));
     } finally {
       this.ocupado.set(false);
     }

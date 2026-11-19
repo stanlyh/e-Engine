@@ -15,6 +15,7 @@ internal sealed class ManejadorExcepciones(IProblemDetailsService problemDetails
             DomainException e => (StatusCodes.Status400BadRequest, "Regla de negocio", e.Message),
             NoEncontradoException e => (StatusCodes.Status404NotFound, "No encontrado", e.Message),
             AccesoDenegadoException e => (StatusCodes.Status403Forbidden, "Acceso denegado", e.Message),
+            ConflictoException e => (StatusCodes.Status409Conflict, "Conflicto", e.Message),
             DbUpdateConcurrencyException => (StatusCodes.Status409Conflict, "Conflicto",
                 "Otra persona modificó el documento al mismo tiempo. Recarga e intenta de nuevo."),
             // Respaldo del índice único: dos cargas simultáneas de la misma factura.

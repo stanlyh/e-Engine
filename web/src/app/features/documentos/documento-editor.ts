@@ -1,11 +1,13 @@
 import { CurrencyPipe, DatePipe, Location } from '@angular/common';
 import { HttpEventType, httpResource } from '@angular/common/http';
-import { Component, computed, effect, inject, input, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, signal, viewChild } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom, lastValueFrom, tap } from 'rxjs';
 import { DocumentosApi } from '../../core/api/documentos-api';
 import { DocumentoDetalle, ReglaAprobacion, TipoArchivo, rutaParaMonto } from '../../core/api/modelos';
 import { mensajeError } from '../../core/http/errores';
+import { Avisos } from '../../shared/avisos';
+import { ConfirmarDialogo } from '../../shared/ui/confirmar-dialogo';
 import { EstadoBadge } from '../../shared/ui/estado-badge';
 import { FileSlot } from '../../shared/ui/file-slot';
 
@@ -17,7 +19,7 @@ type Slot = 'xml' | 'pdf';
  */
 @Component({
   selector: 'app-documento-editor',
-  imports: [RouterLink, CurrencyPipe, DatePipe, EstadoBadge, FileSlot],
+  imports: [RouterLink, CurrencyPipe, DatePipe, EstadoBadge, FileSlot, ConfirmarDialogo],
   template: `
     <a [routerLink]="documento() ? ['/documentos', documento()!.id] : '/documentos'" class="text-sm text-primario-700 hover:underline">
       ← {{ documento() ? 'Volver al documento' : 'Mis documentos' }}
@@ -114,6 +116,11 @@ type Slot = 'xml' | 'pdf';
       }
 
       <div class="mt-6 flex flex-wrap justify-end gap-3">
+        @if (documento()?.permisos?.eliminar) {
+          <button type="button" class="btn-secundario mr-auto text-rechazado-700" [disabled]="ocupado()" (click)="pedirEliminar()">
+            Eliminar borrador
+          </button>
+        }
         @if (documento()) {
           <button type="button" class="btn-secundario" [disabled]="ocupado() || !descripcionCambiada()" (click)="guardarDescripcion()">
             Guardar borrador
@@ -127,6 +134,16 @@ type Slot = 'xml' | 'pdf';
         <p class="mt-2 text-right text-xs text-slate-500">Para enviar se necesitan el XML y el PDF.</p>
       }
     }
+
+    <app-confirmar-dialogo
+      #confirmarEliminar
+      titulo="Eliminar borrador"
+      [mensaje]="'Se eliminará ' + (documento()?.folio ?? 'el borrador') + ' con sus archivos. Esta acción no se puede deshacer.'"
+      textoBoton="Eliminar"
+      [ocupado]="ocupado()"
+      [error]="errorEliminar()"
+      (confirmado)="eliminar()"
+    />
   `,
 })
 export class DocumentoEditor {
@@ -136,6 +153,9 @@ export class DocumentoEditor {
   private readonly api = inject(DocumentosApi);
   private readonly router = inject(Router);
   private readonly location = inject(Location);
+  private readonly avisos = inject(Avisos);
+  private readonly confirmarEliminar = viewChild.required<ConfirmarDialogo>('confirmarEliminar');
+  protected readonly errorEliminar = signal<string | null>(null);
 
   protected readonly documento = signal<DocumentoDetalle | null>(null);
   protected readonly descripcion = signal('');
@@ -219,6 +239,27 @@ export class DocumentoEditor {
       await firstValueFrom(this.api.enviar(id));
       await this.router.navigate(['/documentos', id]);
     });
+  }
+
+  protected pedirEliminar(): void {
+    this.errorEliminar.set(null);
+    this.confirmarEliminar().abrir();
+  }
+
+  protected async eliminar(): Promise<void> {
+    const d = this.documento();
+    if (!d) return;
+    this.ocupado.set(true);
+    try {
+      await firstValueFrom(this.api.eliminar(d.id));
+      this.confirmarEliminar().cerrar();
+      this.avisos.mostrar(`Se eliminó el borrador ${d.folio}.`);
+      await this.router.navigate(['/documentos']);
+    } catch (e) {
+      this.errorEliminar.set(mensajeError(e));
+    } finally {
+      this.ocupado.set(false);
+    }
   }
 
   private async cargar(id: number): Promise<void> {

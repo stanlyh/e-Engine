@@ -489,3 +489,5 @@ docs/
 
 appsettings.Development.json
 appsettings.json
+# Correos de desarrollo (Correo:Modo = Carpeta)
+correos/
