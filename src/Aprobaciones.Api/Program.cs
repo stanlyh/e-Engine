@@ -80,9 +80,13 @@ app.MapDocumentosEndpoints();
 app.MapBandejasEndpoints();
 app.MapDashboardEndpoints();
 app.MapAdminEndpoints();
+app.MapSaludEndpoints();
 
 // Rutas de API inexistentes devuelven 404; el resto lo resuelve el router de Angular.
 app.MapFallback("/api/{**ruta}", () => Results.NotFound());
 app.MapFallbackToFile("index.html");
 
 app.Run();
+
+/// <summary>Visible para las pruebas de integración (WebApplicationFactory).</summary>
+public partial class Program;

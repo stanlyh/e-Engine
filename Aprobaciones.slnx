@@ -6,6 +6,7 @@
     <Project Path="src/Aprobaciones.Infrastructure/Aprobaciones.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Aprobaciones.Api.Tests/Aprobaciones.Api.Tests.csproj" />
     <Project Path="tests/Aprobaciones.Domain.Tests/Aprobaciones.Domain.Tests.csproj" />
     <Project Path="tests/Aprobaciones.Infrastructure.Tests/Aprobaciones.Infrastructure.Tests.csproj" />
   </Folder>

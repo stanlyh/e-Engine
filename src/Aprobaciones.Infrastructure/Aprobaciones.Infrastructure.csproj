@@ -24,6 +24,8 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Aprobaciones.Infrastructure.Tests" />
+    <!-- Las pruebas de integración procesan la cola de correos a mano (ProcesadorNotificaciones). -->
+    <InternalsVisibleTo Include="Aprobaciones.Api.Tests" />
   </ItemGroup>
 
 </Project>

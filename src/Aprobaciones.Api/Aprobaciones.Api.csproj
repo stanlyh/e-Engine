@@ -19,4 +19,12 @@
     <ProjectReference Include="..\Aprobaciones.Infrastructure\Aprobaciones.Infrastructure.csproj" />
   </ItemGroup>
 
+  <!--
+    La configuración no viaja en el paquete: appsettings.Development.json tiene credenciales de desarrollo y
+    appsettings.json se mantiene en el servidor (una actualización no debe sobrescribirlo). Ver deploy/appsettings.ejemplo.json.
+  -->
+  <ItemGroup>
+    <Content Update="appsettings.json;appsettings.*.json" CopyToPublishDirectory="Never" />
+  </ItemGroup>
+
 </Project>

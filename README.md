@@ -13,8 +13,11 @@ src/
   Aprobaciones.Infrastructure/  EF Core, migraciones, datos iniciales, consulta a AD
   Aprobaciones.Api/             Endpoints, Windows Auth, grupos AD → roles, antiforgery
 tests/
-  Aprobaciones.Domain.Tests/    Pruebas de transiciones y reglas por monto
-web/                            Angular 22 (el build sale a src/Aprobaciones.Api/wwwroot)
+  Aprobaciones.Domain.Tests/          Transiciones, reglas por monto, validación de rangos y cola de avisos
+  Aprobaciones.Infrastructure.Tests/  Lector CFDI y almacén en disco
+  Aprobaciones.Api.Tests/             Integración: la API completa contra una base de LocalDB
+web/                                  Angular 22 (el build sale a src/Aprobaciones.Api/wwwroot)
+deploy/                               Publicación, configuración de IIS, permisos SQL y plantilla de appsettings
 ```
 
 ## Flujo
@@ -121,17 +124,45 @@ En **Development**, la sección `DirectorioSimulado` (usuarios con correo y grup
    ```
 3. API: `dotnet run --project src/Aprobaciones.Api --launch-profile http` (http://localhost:5214)
 4. Angular: `cd web && npm start` (http://localhost:4200). Llama a la API con credenciales de Windows vía CORS.
-5. Pruebas: `dotnet test` (dominio, reglas, avisos, lector CFDI y almacén en disco)
+5. Pruebas: `dotnet test`. Las de integración levantan la API en memoria contra una base nueva de LocalDB (`(localdb)\MSSQLLocalDB`, se instala con Visual Studio o SQL Server Express) que se crea con las migraciones y se borra al terminar. Sustituyen solo Windows Authentication (usuario y grupos por encabezados), Active Directory y el envío de correo, y fallan si hay cambios en el modelo sin migración.
 6. Con `sqlcmd` usa `-I`: los índices filtrados requieren `QUOTED_IDENTIFIER ON`.
 
 ## Producción (IIS)
 
-1. `cd web && npm run build` (genera `src/Aprobaciones.Api/wwwroot`)
-2. `dotnet publish src/Aprobaciones.Api -c Release`
-3. En el sitio IIS: **Windows Authentication habilitado** y **Anonymous deshabilitado**.
-4. La cuenta del Application Pool necesita acceso a SQL Server y permiso de escritura en `Documentos:RutaArchivos`.
-5. Correos: configurar la sección `Correo` y `Notificaciones:UrlBase`. El envío corre dentro del sitio, así que el Application Pool debe quedar activo: **Start Mode = AlwaysRunning**, **Idle Time-out = 0** y en el sitio **Preload Enabled = True**. Si IIS lo detiene, los avisos esperan en la cola hasta la siguiente petición.
-6. Desde Administración → Correos, "Enviarme un correo de prueba" confirma la configuración; "Verificar" en cada paso de las reglas confirma que el grupo existe en AD y quiénes tienen correo.
+### Requisitos del servidor
+
+- IIS con **Autenticación de Windows** y el **Hosting Bundle de .NET 10** (ASP.NET Core Module V2).
+- SQL Server accesible con la cuenta del Application Pool.
+- Una carpeta para los archivos (`Documentos:RutaArchivos`) fuera de la carpeta del sitio e incluida en el respaldo.
+
+### 1. Armar el paquete (equipo de desarrollo)
+
+```
+.\deploy\publicar.ps1
+```
+
+Corre las pruebas, compila Angular, publica la API y deja en `artifacts\<fecha>-<commit>\`:
+
+| Archivo | Uso |
+|---|---|
+| `sitio\` | Contenido de la carpeta del sitio. **No incluye appsettings**: la configuración vive en el servidor y una actualización no la sobrescribe |
+| `migraciones.sql` | Script idempotente: lleva cualquier versión anterior de la base a la actual |
+| `appsettings.ejemplo.json` | Plantilla para el primer despliegue |
+| `Aprobaciones-<versión>.zip` | Todo lo anterior |
+
+### 2. Primer despliegue
+
+1. Crear el sitio (como administrador): `.\deploy\configurar-iis.ps1 -RutaSitio C:\inetpub\Aprobaciones -RutaArchivos E:\AprobacionesArchivos -NombreHost aprobaciones.empresa.local`. Deja Windows Authentication como único método, el pool sin CLR, **AlwaysRunning** con **Idle Time-out = 0** y **Preload** (el envío de correos corre dentro del sitio), y da permisos de lectura al sitio y de escritura a la carpeta de archivos.
+2. Base de datos: crear `AprobacionDocumentos`, ejecutar `migraciones.sql` y después `deploy\permisos-sql.sql` con la cuenta del pool (solo `db_datareader` y `db_datawriter`: la aplicación no cambia el esquema).
+3. Copiar `sitio\` a la carpeta del sitio y crear ahí `appsettings.json` a partir de `appsettings.ejemplo.json`: cadena de conexión, grupos de AD con su dominio (`EMPRESA\APR_Tesoreria`), RFC de la empresa, ruta de archivos y la sección `Correo`.
+4. Abrir `/api/salud`: debe responder `"estado": "ok"` (503 si no hay conexión a la base o faltan migraciones).
+5. En Administración → Reglas, cambiar los grupos de ejemplo (`APR_*`) por los reales y pulsar **Verificar** en cada paso. En Administración → Correos, **Enviarme un correo de prueba**.
+
+### 3. Actualizaciones
+
+1. Ejecutar `migraciones.sql` del paquete nuevo (no hace nada si la base ya está al día).
+2. Detener el sitio, reemplazar el contenido de la carpeta **sin borrar `appsettings.json`** e iniciar el sitio.
+3. Confirmar con `/api/salud` (la versión incluye el commit).
 
 ## Avance
 
@@ -143,4 +174,4 @@ En **Development**, la sección `DirectorioSimulado` (usuarios con correo y grup
 - [x] Fase 6: bandejas "Por aprobar" (pendientes de mis grupos + resueltos por mí) y "Tesorería" (por procesar + procesados)
 - [x] Fase 7: indicadores del inicio (6 tarjetas por alcance y periodo, trabajo pendiente por rol, últimos movimientos) enlazados a la lista filtrada; "Todos los documentos" para Admin
 - [x] Fase 8: avisos por correo (cola con reintentos), administración de reglas (validación de huecos y traslapes, verificación de grupos en AD) y eliminación de borradores
-- [ ] Fase 9: pruebas de integración y despliegue
+- [x] Fase 9: pruebas de integración (API completa contra LocalDB), `/api/salud`, paquete de despliegue con script SQL idempotente, configuración de IIS y permisos mínimos de SQL
